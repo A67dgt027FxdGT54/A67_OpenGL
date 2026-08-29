@@ -31,20 +31,13 @@ This library includes the files of the following libraries, licensed under the f
 
 该库包含以下库的文件，以下的库按照以下协议授权。
 
-<div class="bar">
-    <div class="left">
-        GLFW <br>
-        GLAD <br>
-        GLM <br>
-        stb_image
-    </div>
-    <div class="right">
-        zlib/libpng <br>
-        MIT <br>
-        MIT <br>
-        属于公共领域 Public Domain
-    </div>
-</div>
+- GLFW: zlib/libpng
+
+- GLAD: MIT
+
+- GLM: MIT
+
+- stb_image: (Public Domain)
 
 ---
 
