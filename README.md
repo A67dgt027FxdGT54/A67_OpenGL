@@ -10,8 +10,13 @@ Only support Windows and GCC compiler.
 
 > OpenGL64/
 > > header/ : the headers. 头文件。
+> >
 > > > OpenGL.h : the header of main functions. 定义主要功能的头文件。
+> >
 > > lib/ or lib64/ or lib32/ : binary files. 二进制文件。
+> >
 > > log/ : log files. 日志。
+> >
 > > sd_lib/ : Shader library. 着色器库。
+> >
 > > 教程/ : tutorial. 教程。
