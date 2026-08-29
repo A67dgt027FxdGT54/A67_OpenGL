@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>1.7 摄像机</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>1.7 摄像机</h1>
+        <h3 class="inline">例1. </h3> 让我们的摄像机在场景中旋转。<br>
+        我们将会使用一些三角学知识，不理解也没关系。<br>
+        定义旋转半径：<code class="lock">float r=10.0f;</code>
+        设置相机坐标（随时间改变）：
+<code class="block">cam.pos.x=cos(tim.cur)*r;
+cam.pos.z=sin(tim.cur)*r;</code>
+        设置偏航角，使相机一直看向原点：<code class="block">cam.set_yaw(degrees(tim.cur)-180.0f);</code>
+        <span class="file">eg1</span>。<br>
+        <h3 class="inline">例2. </h3> 使用鼠标和键盘控制相机移动。<br>
+        还记得 <code>gl.kpr()</code> 吗？它可以检测按键状态。<br>
+        此外，camera_t 还提供了以下三个函数，用于方便地向前方/右侧/上方移动：
+        <code class="block">movef/r/u(float 时间差);</code>
+        在时间差中，通常传入 <code>tim.dis</code> 或其相反数（代表反向移动）。<br>
+        这样做的原因是，渲染每一帧用的时间通常不一致，因此，使用固定的移动距离将会导致移动速度无法确定，因此我们需要用时间差乘一个确定的速度（ <code>float cam.mov_spd=2.5f;</code> ）来确定移动距离。<br>
+        了解了以上知识后，我们写出代码：<br>
+<code class="block">if(gl.kpr('W')) cam.movef(tim.dis);
+if(gl.kpr('A')) cam.mover(-tim.dis);
+if(gl.kpr('S')) cam.movef(-tim.dis);
+if(gl.kpr('D')) cam.mover(tim.dis);</code>
+        接下来进行鼠标设置。我们首先定义一个鼠标控制器：
+        <code class="block">mousectrl_t g_mouse;</code>
+        并启用鼠标控制：
+        <code class="block">gl.mouse();</code>
+        然后定义两个回调函数：
+<code class="block">void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+scroll_callback(GLFWwindow* window, double xoffset, double yoffset);</code>
+        第一个用于处理鼠标指针位置，<code>xpos</code> <code>ypos</code> 分别代表鼠标的X和Y坐标。<br>
+        第二个用于处理鼠标滚轮滚动，<code>yoffset</code> 代表鼠标滚轮竖直滚动的大小。<br>
+        首先定义第一个。在函数开头初始化鼠标控制器：
+        <code class="block">g_mouse.init(xpos,ypos);</code>
+        然后设定新的鼠标位置：<code class="block">g_mouse.set(xpos,ypos);</code>
+        最后，利用 <code>g_mouse.offs()</code> 求出鼠标移动量，传入 <code>cam.mov_look();</code>
+        来改变摄像机角度。<br>
+        其内部利用<span class="def">鼠标灵敏度</span>（ <code>cam.sensit=0.1f</code> ）来确认角度改变幅度。<br>
+        然后定义第二个。我们通过滚轮实现缩放效果(调用此函数改变fov)：
+        <code class="block">cam.scl_look(yoffset);</code>
+        现在我们的 <span class="file">sto.h</span> 几乎是通用的了。<br>
+        完整代码 <span class="file">eg2</span> 。<br>
+        我们发现，视角上仰时，前进会“飞起来”。
+        我们可以通过以下代码来禁止摄像机根据视角改变Y坐标：（启用：赋值为0即可。）
+        <code class="block">cam.keepy=1;</code>
+        
+        <h1>本章总结</h1>
+
+        <h2>摄像机移动</h2>
+        <div class="bar">
+            <div class="left"><code>cam.movef(float dt)</code></div>
+            <span class="hide">：</span>
+            <div class="right">沿摄像机前方移动</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cam.mover(float dt)</code></div>
+            <span class="hide">：</span>
+            <div class="right">沿摄像机右方移动</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cam.moveu(float dt)</code></div>
+            <span class="hide">：</span>
+            <div class="right">沿摄像机上方移动（若 <code>cam.keepy == 1</code> 则无效）</div>
+        </div>
+        <div class="bar">
+            <div class="left">参数 <code>dt</code></div>
+            <span class="hide">：</span>
+            <div class="right">通常传入 <code>tim.dis</code>，移动速度由 <code>cam.mov_spd</code> 控制。</div>
+        </div>
+
+        <h2>鼠标控制</h2>
+        <div class="bar">
+            <div class="left"><code>gl.mouse()</code></div>
+            <span class="hide">：</span>
+            <div class="right">启用鼠标并设置回调</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mousectrl_t g_mouse</code></div>
+            <span class="hide">：</span>
+            <div class="right">鼠标状态控制器</div>
+        </div>
+        <div class="bar">
+            <div class="left">在 <code>mouse_callback</code> 中</div>
+            <span class="hide">：</span>
+            <div class="right">调用 <code>g_mouse.init(xpos,ypos)</code>（或手动初始化），然后用 <code>g_mouse.offs()</code> 获取偏移量，调用 <code>cam.mov_look(偏移量)</code> 改变视角。</div>
+        </div>
+        <div class="bar">
+            <div class="left">鼠标灵敏度</div>
+            <span class="hide">：</span>
+            <div class="right">由 <code>cam.sensit</code> 控制，默认 0.1。</div>
+        </div>
+
+        <h2>滚轮缩放</h2>
+        <div class="bar">
+            <div class="left">在 <code>scroll_callback</code> 中</div>
+            <span class="hide">：</span>
+            <div class="right">调用 <code>cam.scl_look(yoffset)</code> 改变视场角（FOV），实现缩放效果。</div>
+        </div>
+
+        <h2>锁定水平移动</h2>
+        <div class="bar">
+            <div class="left"><code>cam.keepy = 1</code></div>
+            <span class="hide">：</span>
+            <div class="right">防止摄像机在俯仰时上下移动，保持水平运动。</div>
+        </div>
+
+        <h2>时间差</h2>
+        <div class="bar">
+            <div class="left"><code>tim.dis</code></div>
+            <span class="hide">：</span>
+            <div class="right">上一帧到本帧的时间差，作为移动函数的参数，保证不同帧率下的移动速度一致。</div>
+        </div>
+
+        <br>
+        <a href="1.E.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

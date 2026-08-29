@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>1 入门</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>1 入门</h1>
+        <h2>OpenGL 是什么？</h2>
+        <span class="def">OpenGL</span> 是一个图形API，包含了一系列可以操作图形、图像的函数。
+        <div class="ext">OpenGL 的不同版本及工作方式</div>
+        <div class="ex">
+            <h3>1. 早期 OpenGL </h3>
+            使用<span class="def">立即渲染模式</span>，调用一些函数就直接渲染到屏幕上。性能较差。
+            <h3>2. 现代 OpenGL</h3>
+            使用<span class="def">核心模式</span>，使用了各种对象，函数分为两种：
+            一是<span class="def">状态设置函数</span>，二是<span class="def">状态使用函数</span>。<br>
+            这里的 OpenGL 有各种状态（这些状态又叫 <span class="def">OpenGL上下文</span>,描述了它应当如何渲染），<br> 第一种函数可以改变它的状态，而第二种可以让 OpenGL 按照它目前的状态渲染图像。<br>
+            在这个库中，我对这些函数进行了简化，使得函数的调用像立即渲染模式一样简单，性能也良好。<br>
+            <h3>3. OpenGL的另一个特性：对象</h3> 
+            <span class="def">对象</span>是 OpenGL 的某些状态设置。使用它可以简化一些状态设置。<br>
+            如，我们需要同时渲染一个3D物体和一个2D图像，<br> 就可以把3D物体和2D图像的设置分别设定为一个对象。<br> 在渲染对应的形状时，绑定对应的对象，<br> 即可免去那一大串麻烦的设置函数。
+        </div>
+        <h2>配置</h2>
+        到处下载和配置各种库是一件很繁琐的事情，但这个库已经准备了：
+        <ul>
+            <li>GLFW和GLAD；</li>
+            <li>图像加载库stb_image；</li>
+            <li>数学库GLM；</li>
+        </ul>
+        <div class="ext">某些库的功能</div>
+        <div class="ex">
+            GLFW 用于创建 OpenGL上下文、窗口。<br>
+            GLAD 用于加载 OpenGL 的各种函数。
+        </div>
+        下载后需要按以下方法配置：
+        <ol>
+            <li>在您下载并解压的 A67_OpenGL 库文件夹中，选择库的位数，通常为64位。将 <code>lib32</code> 或 <code>lib64</code> 重命名为
+            <code>lib</code> 即可。</li>
+            <li>
+                配置。（以 Dev-C++ 为例）
+                打开：上方菜单栏/工具/编译选项。
+                <ol>
+                    <li>
+                        编译器选项卡：
+                        勾选“在连接器命令行加入以下命令”，在下方输入框中输入 
+                        <code>-static-libgcc -lglfw3 -lopengl32 -lgdi32</code>，然后点“确定”。
+                        <div class="caut">注意</div>
+                        <div class="cau">如果你还使用了其他库，输入框中也要包含其他库的命令。</div>
+                    </li>
+                    <li>
+                        目录选项卡：选择“库”，在下方输入框内输入库中 <code>lib</code> 的路径，然后点“添加”；
+                        <br>
+                        选择“C++包含文件”，在下方输入框内输入库中 <code>include</code> 的路径，然后点“添加”。
+                    </li>
+                </ol>
+                然后将 <code>lib/glfw3.dll</code> 复制到与你的代码放在同一个文件夹中。
+            </li>
+        </ol>
+        <h2>库结构介绍</h2>
+        <div class="reft">根目录</div>
+        <div class="ref">
+            <div class="reft">header\：用于存放头文件。</div>
+            <div class="ref">
+                OpenGL.h：定义了这个库的功能。<br>
+                ……
+            </div>
+            <div class="refb">include\：含有各种头文件。</div>
+            <div class="refb">lib\ or lib64\ or lib32\：含有各种二进制文件。</div>
+            <div class="refb">log\：用于存放日志文件。</div>
+            <div class="refb">sd_lib\：用于存放着色器库文件。</div>
+            glfw3.dll：GLFW库。<br>
+            *.cpp：各主程序。
+        </div>
+        <br>
+        <a href="1.1.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>1.3 着色器</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>1.3 着色器</h1>
+        <h2>复习</h2>
+        <span class="def">顶点着色器</span>是用于接收并传递顶点数据、计算顶点位置的着色器程序。<br>
+        <span class="def">片段着色器</span>是用于计算片段（像素）颜色的着色器程序。<br>
+        <code>layout (location = X)</code> 用于在顶点着色器中获取顶点属性。
+        <h2>新知识</h2>
+        着色器的语法与C语言几乎相同。
+        格式：
+        <div class="bar">
+            <div class="linebar">
+                1 <br>
+                2 <br>
+                3 
+            </div>
+            <div class="right">
+                版本声明；<br>
+                变量声明；<br>
+                主函数；
+            </div>
+        </div>
+        <h2>1. 版本声明</h2> 
+        <code class="block">#version 330 core</code>
+        <h2>2. 变量声明</h2> 
+        我们可以通过以下语句定义一个变量：
+        <code class="block">数据类型 变量名;</code>
+        数据类型除基础类型（ <code>int, float, double, uint, bool</code>）外还有
+        <h3>2.1 向量与矩阵</h3>
+        向量和矩阵在图形渲染中是很有用的数学工具。将会在几节之后讲解。<br>
+        为什么有用呢？因为运用好了这种类型，我们就能以极其简易的方式存下坐标、颜色甚至是各种变换。
+        <div class="bar">
+            <div class="left">
+                <strong>数据类型</strong><br>
+                <code>vec2</code><br>
+                <code>vec3</code><br>
+                <code>vec4</code><br>
+                <code>mat2</code><br>
+                <code>mat3</code><br>
+                <code>mat4</code><br>
+            </div>
+            <div class="right">
+                <strong>描述</strong><br>
+                两分量向量。<br>
+                三分量向量。<br>
+                四分量向量。<br>
+                2x2矩阵。<br>
+                3x3矩阵。<br>
+                4x4矩阵。<br>
+            </div>
+        </div>
+        例如：<code class="block">vec4 fcol;</code>
+        我们可以通过以下方式获取向量的分量：
+        <div class="bar">
+            <div class="left">
+                <strong>用途</strong><br>
+                第1个分量<br>
+                第2个分量<br>
+                第3个分量<br>
+                第4个分量
+            </div>
+            <div class="right">
+                <strong><code>坐标/通用 纹理坐标 颜色</code></strong><br>
+                <code>向量名.x 向量名.s 向量名.r</code><br>
+                <code>向量名.y 向量名.t 向量名.g</code><br>
+                <code>向量名.z 向量名.p 向量名.b</code><br>
+                <code>向量名.w 向量名.q 向量名.a</code><br>
+            </div>
+        </div>
+        还有一些灵活的语法，叫做<span class="def">重组</span>：
+        <code class="block">vec2 someVec=vec2(1,2); 
+vec4 differentVec = someVec.xyxx; // =(1,2,1,1)
+vec3 anotherVec = differentVec.zyw; // =(1,2,1)
+vec4 otherVec = someVec.xxxx + anotherVec.yxzy; // =(1,1,1,1)+(2,1,1,2)
+
+vec2 vect = vec2(0.5, 0.7); // 0.5 0.7
+vec4 result = vec4(vect, 0.0, 0.0); // 0.5 0.7 0.0 0.0
+vec4 otherResult = vec4(result, 1.0); // 0.5 0.7 0.0 1.0</code>
+        不难发现，<code>向量名.多个分量</code> 就代表这些分量按给定顺序排列。
+        <h2>3. 主函数</h2>
+        在主函数中，我们要通过一些语句完成下列任务：
+        <div class="defbar">
+            1. 在顶点着色器中：给变量 <code>vec4 gl_Position</code> 赋值为顶点最终坐标（NDC）， <code>w</code> 分量设为1。(原因后面会讲)<br>
+
+            2. 在片段着色器中：定义恰好一个 <span class="def">输出变量</span>（后面会讲）并为之赋值为该片段的最终颜色。
+        </div>
+        <h2>特殊变量</h2>
+        <h3>输入输出变量</h3>
+        为了进行数据传递，我们希望能够进行输入和输出操作。用 <code>std::cout</code> 肯定不行，因为这不是C语言。因此，我们就要使用以下格式：
+        在数据类型之前加上 <code>in </code> 表示输入， <code>out </code>表示输出。 <br>
+        需要传递数据时，就在发送数据的着色器中声明一个输出变量并赋值、在接收者中声明一个变量名相同的输入变量，即可使用它的值。<br>
+        例如：
+<code class="block">// *.vs
+out vec4 vec;
+void main(){
+    vec=vec4(0.0f,0.0f,0.0f,0.0f);
+}
+
+// *.fs
+in vec4 vec;
+</code>
+        有两个例外：<br>
+        一个是 <code>layout (location = X) in </code> ，用于顶点着色器中获取顶点数据的第 <code>X</code> 个属性。<br><br>
+        另一个是片段着色器中的 <code>out </code>。我们知道，片段着色器是我们能定义的最后一个着色器，那么这些数据要传给什么呢？答案：在片段着色器中定义恰好一个输出变量，作为它输出的片段颜色。<br><br>
+        
+        <h4 class="inline">练习1. </h4>
+        修改一下 <span class="file">1.2/ex1</span> 的顶点着色器和片段着色器，在顶点着色器中给一个输出变量赋值为蓝色，在片段着色器中输入这个变量并将片段颜色设为此变量。 <span class="file">ex1</span><br>
+
+        <h3>uniform</h3>
+        <span class="def">uniform</span> 用于从 C++ 程序向着色器发送数据。<br>
+        uniform 的特性：
+        <div class="bar">
+            <div class="linebar">全局</div>
+            <span class="hide">:</span>
+            <div class="rightbar">它的名称是独一无二的，即不能在其他着色器中定义同名变量；</div>
+        </div>
+        
+        <div class="bar">
+            <div class="linebar">可保存</div>
+            <span class="hide">:</span>
+            <div class="rightbar">从C++程序传入数据后，这些数据会被保存下来，可以随时使用。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="linebar"><span class="red">移除特性</span></div>
+            <span class="hide">:</span>
+            <div class="rightbar"><span class="red">如果你声明了一个uniform却没用过，编译器会静默移除这个变量，导致最后编译出的版本中并不会包含它，这可能导致几个非常麻烦的错误，记住这点！</span></div>
+        </div>
+        格式：在数据类型之前加上 <code>uniform </code> 即可。<br>
+        在C++程序中调用以下 <code>shader_t</code> 类的成员函数来传入数据：
+        <code class="block">sd.set**(string& name,***);</code>
+        其中，
+        <div class="bar">
+            <div class="linebar"><code>**</code></div>
+            <span class="hide">:</span>
+            <div class="rightbar">
+                后缀，代表传入数据的类型。
+                <div class="bar">
+                    <div class="linebar">
+                        <code>b</code><br>
+                        <code>i</code><br>
+                        <code>f</code><br>
+                        <code>2f</code><br>
+                        <code>3f</code><br>
+                        <code>4f</code><br>
+                    </div>
+                    <div class="rightbar">
+                        布尔。<br>
+                        整数。<br>
+                        小数。<br>
+                        两个小数（双分量向量）<br>
+                        三个小数（三分量向量）<br>
+                        四个小数（四分量向量）<br>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bar">
+            <div class="linebar"><code>name</code></div>
+            <span class="hide">:</span>
+            <div class="rightbar">uniform变量名；</div>
+        </div>
+        
+        <div class="bar">
+            <div class="linebar"><code>***</code></div>
+            <span class="hide">:</span>
+            <div class="rightbar">对应的传入数据。</div>
+        </div>
+        <!-- 接下来要给 set3f 举例，然后写一个三角形变色 -->
+        让我们实际应用一下：<br>
+
+        <h4 class="inline">例1. </h4>使 <span class="file">1.2课 eg1</span> 中的红色三角形不断变亮后再变暗。<br>
+        首先，我们应该修改一下片段着色器：
+        <code class="block">#version 330 core
+        out vec4 fcol;
+        uniform vec3 ucol;
+        void main(){
+            fcol=vec4(ucol.rgb,1.0f); // uniform with 100% alpha
+        }</code>
+        该着色器接收一个 uniform，作为颜色。<br>
+        然后我们在主程序中定义一个计时器：
+        <code class="block">timer_t tim;</code>
+        然后每帧刷新它，获取最新时间：
+        <code class="block">tim.upd();</code>
+        我们就能通过 <code>tim.cur</code> 获取这帧的时间。<br>
+        接着使用 <code>sin()</code> 让颜色在 0.0 到 1.0 之间改变：
+        <code class="block">float red=sin(tim.cur)/2.0f+0.5f;</code>
+        然后设置 uniform：
+        <code class="block">sd.set3f("ucol",red,0.0f,0.0f);</code>
+        完整代码 <span class="file">eg1</span><br>
+
+        
+        <h4 class="inline">练习2. </h4>
+        修改 <span class="file">1.2课 eg1</span> 中的顶点着色器，使三角形上下颠倒。 <span class="file">ex2</span><br>
+        <h4 class="inline">练习3. </h4>
+        修改 <span class="file">1.2课 eg1</span> 中的主程序和顶点着色器，使用uniform定义一个水平偏移量，在顶点着色器中使用这个偏移量把三角形移动到屏幕右侧。 <span class="file">ex3</span>
+
+        <h1>总结</h1>
+
+        <div class="defbar">
+            <span class="def">着色器</span> 是用 GLSL 编写的小程序，语法类似 C 语言。每个着色器由版本声明、变量声明、主函数三部分组成。
+        </div>
+
+        <h2>版本声明</h2>
+        <code class="block">#version 330 core</code>
+
+        <h2>变量声明</h2>
+        <div class="bar">
+            <div class="left">基础类型</div>
+            <span class="hide">：</span>
+            <div class="right"><code>int, float, double, uint, bool</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">向量类型</div>
+            <span class="hide">：</span>
+            <div class="right"><code>vec2, vec3, vec4</code>（分别有 2/3/4 个分量）</div>
+        </div>
+        <div class="bar">
+            <div class="left">矩阵类型</div>
+            <span class="hide">：</span>
+            <div class="right"><code>mat2, mat3, mat4</code>（分别对应 2x2/3x3/4x4 矩阵）</div>
+        </div>
+
+        <h2>分量访问</h2>
+        <div class="bar">
+            <div class="left">坐标</div>
+            <span class="hide">：</span>
+            <div class="right"><code>.x .y .z .w</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">纹理坐标</div>
+            <span class="hide">：</span>
+            <div class="right"><code>.s .t .p .q</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">颜色</div>
+            <span class="hide">：</span>
+            <div class="right"><code>.r .g .b .a</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">重组</div>
+            <span class="hide">：</span>
+            <div class="right">可以任意组合分量，如 <code>someVec.xyxx</code>、<code>anotherVec.zyw</code></div>
+        </div>
+
+        <h2>主函数任务</h2>
+        <div class="defbar">
+            <strong>顶点着色器：</strong> 赋值 <code>gl_Position</code>（四分量，w 分量设为 1）<br>
+            <strong>片段着色器：</strong> 定义恰好一个 <code>out</code> 变量，并赋值为片段颜色（<code>vec4</code>）
+        </div>
+
+        <h2>特殊变量修饰符</h2>
+        <div class="bar">
+            <div class="left"><code>in</code></div>
+            <span class="hide">：</span>
+            <div class="right">输入变量，从上阶段接收数据</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>out</code></div>
+            <span class="hide">：</span>
+            <div class="right">输出变量，向下阶段传递数据</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>layout (location = X) in</code></div>
+            <span class="hide">：</span>
+            <div class="right">顶点着色器中获取第 X 个顶点属性</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>uniform</code></div>
+            <span class="hide">：</span>
+            <div class="right">从 C++ 程序向着色器发送的全局变量，可被所有着色器共享</div>
+        </div>
+
+        <h2>C++ 端传递 uniform</h2>
+        <div class="bar">
+            <div class="left"><code>sd.setb(name, bool)</code></div>
+            <span class="hide">：</span>
+            <div class="right">布尔值</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sd.seti(name, int)</code></div>
+            <span class="hide">：</span>
+            <div class="right">整数</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sd.setf(name, float)</code></div>
+            <span class="hide">：</span>
+            <div class="right">单精度小数</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sd.set2f(name, x, y)</code><br><code>sd.set3f(name, x, y, z)</code><br><code>sd.set4f(name, x, y, z, w)</code></div>
+            <span class="hide">：</span>
+            <div class="right">2/3/4 个小数</div>
+        </div>
+
+        <h2>计时器</h2>
+        <div class="bar">
+            <div class="left"><code>timer_t tim;</code></div>
+            <span class="hide">：</span>
+            <div class="right">声明计时器对象</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tim.upd()</code></div>
+            <span class="hide">：</span>
+            <div class="right">每帧调用，更新时间</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tim.cur</code></div>
+            <span class="hide">：</span>
+            <div class="right">当前总时间（秒），可用于动画</div>
+        </div>
+        <br>
+        <a href="1.3.1.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

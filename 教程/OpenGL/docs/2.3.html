@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>2.3 更多种光源</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>2.3 更多种光源</h1>
+        我们知道，光源有很多种，由它的成员 <code>lt.type</code> 决定。
+        <div class="bar">
+            <div class="left"><strong>值</strong></div>
+            <span class="hide">：</span>
+            <div class="right"><strong>描述</strong></div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">-1</div>
+            <span class="hide">：</span>
+            <div class="right">无效。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">0</div>
+            <span class="hide">：</span>
+            <div class="right">定向光（平行光，如太阳光）</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">1</div>
+            <span class="hide">：</span>
+            <div class="right">点光源（如灯泡）</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">2</div>
+            <span class="hide">：</span>
+            <div class="right">聚光（如手电筒）</div>
+        </div>
+        接下来将会介绍其余两种光源。
+        <h2>平行光</h2>
+        平行光与点光源的区别：
+        <div class="bar">
+            <div class="left"><code>lt.dir</code></div>
+            <span class="hide">：</span>
+            <div class="right">光的方向。长度不重要。</div>
+        </div>
+        此外，平行光衰减属性无效。<br>
+        <h3 class="inline">例1. </h3> 将 <span class="file">2.2课 eg1</span> 中的光源改为平行光，方向 <code>vec3(-0.2f,-1.0f,-0.3f)</code>。<br>
+        修改 type：
+        <code class="block">lt.type=0;</code>
+        传入 dir，同时注释掉fs中计算dir的代码：
+        <code class="block">lt.dir=vec3(-0.2f,-1.0f,-0.3f); // type 0</code>
+        <code class="block">//lt.dir=f_pos-lt_pos;</code>
+        注释掉我们暂时不需要的衰减系数和光源位置：
+<code class="block">//lt.kc=1.0f;
+//lt.kl=0.09f;
+//lt.kq=0.032f;</code>
+<code class="block">//sd.set3f("lt_pos",lt_pos);</code>
+<code class="block">//uniform vec3 lt_pos;</code>
+        <h2>聚光</h2>
+        聚光仅照亮某个角度内的区域。<br>
+        <img src="2.3_spotlight.png" alt="" class="smallimg">
+        聚光与点光源的区别：
+        <div class="bar">
+            <div class="left"><code>spot_dir</code></div>
+            <span class="hide">：</span>
+            <div class="right">从光源到照射中心的方向</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>icutoff</code></div>
+            <span class="hide">：</span>
+            <div class="right">
+                <!-- 光源到照射中心的连线 与 光源到片段的连线 的夹角小于此度数的，漫反射和镜面光的亮度为设定值 -->
+                内锥角，完全照亮区域的最大夹角。
+            </div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>ocutoff</code></div>
+            <span class="hide">：</span>
+            <div class="right">
+                <!-- 光源到照射中心的连线 与 光源到片段的连线 的夹角大于icutoff，小于此度数的，漫反射和镜面光的亮度，较原设定值有边缘衰减。大于此度数的，仅有环境光。 -->
+                外锥角，完全照亮区域的最大夹角。
+            </div>
+        </div>
+        <div class="bar">
+            <div class="left">说明</div>
+            <span class="hide">：</span>
+            <div class="right">夹角小于内锥角→全亮；<br>
+                在内锥角和外锥角之间→渐变衰减；<br> 大于外锥角→只有环境光。</div>
+        </div>
+
+        <h3 class="inline">例2. </h3> 将 <span class="file">2.2课 eg1</span> 中的光源改为聚光。模拟一个手电筒效果（光源总是在摄像机处且方向与摄像机方向一致）<br>
+        修改 <code>type</code> ：<code class="block">lt.type=2;</code>
+        传入 <code>spot_dir</code><code>icutoff</code><code>ocutoff</code>：
+        <code class="block">lt.spot_dir=cam.get_front();
+lt.icutoff=12.5f;
+lt.ocutoff=17.5f;</code>
+        修改光源位置：<code class="block">sd.set3f("lt_pos",cam.pos);</code>
+
+        <h1>总结</h1>
+        <img src="2.3_comp.png" alt="" class="msimg">
+
+        <br>
+        <a href="2.4.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>功能补充</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>功能补充</h1>
+        篇幅限制，未能在正文中提及全部功能。
+        <h3>1. 网格缓冲数据更新（mesh_buf_t）</h3>
+        <div class="bar">
+            <div class="left"><code>mb.upd_ve( vector&lt;float&gt; 新顶点 )</code></div>
+            <div class="right">整体替换所有顶点数据（数据总量不变）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb.upd_in( vector&lt;unsigned int&gt; 新索引 )</code></div>
+            <div class="right">整体替换所有索引数据（数据总量不变）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb.upd_ve_p( vector&lt;float&gt;& 部分顶点, int 起始顶点 )</code></div>
+            <div class="right">从第 <code>起始顶点</code> 号开始替换部分顶点数据（可用于局部更新）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb.upd_in_p( vector&lt;unsigned int&gt;& 部分索引, int 起始索引 )</code></div>
+            <div class="right">从第 <code>起始索引</code> 号开始替换部分索引数据（三角形索引更新）。</div>
+        </div>
+
+        <div class="caut">注意</div>
+        <div class="cau">
+            使用 <code>upd_ve_p</code> 和 <code>upd_in_p</code> 时，新数据的大小必须与原始数据中对应部分的大小一致，否则可能导致内存访问错误。
+        </div>
+
+        <h3>2. 面剔除（gl_t）</h3>
+        还记得我们要求顶点为逆时针排列吗？这就是为这步优化准备的。
+        <div class="bar">
+            <div class="left"><code>gl.cull_face(bool 启用)</code></div>
+            <div class="right">启用/禁用面剔除。开启后，背对摄像机的三角形将不会被渲染，可提升性能（默认关闭）。</div>
+        </div>
+        <div class="tipst">提示</div>
+        <div class="tips">
+            面剔除依赖于顶点顺序。从正面观察时，顶点应为逆时针顺序。若发现模型“消失”，可检查顶点顺序或暂时关闭剔除。
+        </div>
+
+        <h3>3. 帧率锁定（timer_t）</h3>
+        <div class="bar">
+            <div class="left"><code>tim.fslp()</code></div>
+            <div class="right">在每帧末尾调用，使程序休眠以固定帧率（帧率由构造函数 <code>timer_t(int fps)</code> 设定）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tim.curf</code></div>
+            <div class="right">从程序启动到当前帧的总帧数（仅在调用 <code>fslp()</code> 后递增）。</div>
+        </div>
+        <br>
+        <a href="2.1.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

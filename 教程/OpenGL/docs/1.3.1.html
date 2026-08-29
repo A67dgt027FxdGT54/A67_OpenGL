@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>1.3.1 着色器进阶与综合运用</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>1.3.1 着色器进阶与综合运用</h1>
+        <h3 class="inline">例1. </h3>给 <span class="file">1.2课 eg1</span> 中的三角形的每个顶点
+        分别指定红、绿、蓝三个颜色。<br>
+        我们可以在 .ve 文件中包含更多顶点属性来完成这个任务。<br>
+<code class="block"> 2 //一共有两种属性（位置和颜色）
+ 3               3 //每种属性各三个分量
+ 0.5 -0.5 0.0    1.0 0.0 0.0 //前三个是位置，后三个是颜色
+-0.5 -0.5 0.0    0.0 1.0 0.0
+ 0.0  0.5 0.0    0.0 0.0 1.0</code>
+        接下来修改一下着色器。首先在顶点着色器中接收顶点属性：
+        <code class="block">layout (location = 1) in vec3 lcol;</code>
+        然后把颜色输出给片段着色器：
+        <code class="block">out vec3 tcol;</code>
+        <code class="block">tcol=lcol;</code>
+        再在片段着色器中接收变量：
+        <code class="block">in vec3 tcol;</code>
+        <code class="block">fcol=vec4(tcol.rgb,1.0);</code>
+        <span class="file">eg1</span><br>
+        如果你成功了，你就会看到一个五颜六色的三角形——不仅仅是顶点的三种颜色。
+        <div class="caut">为什么？</div>
+        <div class="cau">
+            我们有三个顶点，以及对应的三种颜色，但三角形有上万个片段，绝大部分不在顶点上，那么，怎么为它确定颜色呢？<br>
+            通过<span class="def">插值</span>。片段着色器的输入，都会根据此片段到顶点的距离，将几个顶点的输出相结合。这是很重要的知识点。<br>
+            例如，右侧有一点紫色，就是蓝色和红色结合起来的。<br>
+            在着色器中，在 <code>in</code> 和对应的 <code>out</code> 前面都加上 <code>flat </code> ，就能取消插值功能。<br>
+            试一下，取消 <code>tcol</code> 的插值，你会发现三角形只有一种颜色。
+        </div>
+        <h3 class="inline">练习1. </h3>使用out关键字把顶点位置输出到片段着色器，并将片段的颜色设置为与顶点位置相等（来看看连顶点位置值都在三角形中被插值的结果）。做完这些后，尝试回答下面的问题：为什么在三角形的左下角是黑的？ 
+        <span class="file">ex1</span>，<a href="1.3.1_ex1_ans.html">问题答案</a>
+        <br>
+        <a href="1.4.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>文档</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>文档</h1>
+        <h2>一、核心类型与常量（gle）</h2>
+        <div class="defbar">
+            <code>gle</code> 是库预定义的一个全局对象，存放常用的 OpenGL 枚举值，方便记忆和书写。
+        </div>
+
+        <h3>1. 数据使用模式（构造网格缓冲时使用）</h3>
+        <div class="bar">
+            <div class="left"><code>gle.draw_never_chg</code></div>
+            <div class="right">数据几乎不变（静态模型）</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gle.draw_often_chg</code></div>
+            <div class="right">数据经常改变（动态物体）</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gle.draw_always_chg</code></div>
+            <div class="right">数据每帧都变（粒子系统）</div>
+        </div>
+
+        <h3>2. 纹理环绕模式（tx.wrap）</h3>
+        <div class="bar">
+            <div class="left"><code>gle.tex_repeat</code></div>
+            <div class="right">重复纹理（默认）</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gle.tex_mirrored_repeat</code></div>
+            <div class="right">镜像重复</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gle.tex_clamp_to_edge</code></div>
+            <div class="right">拉伸边缘像素</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gle.tex_clamp_to_border</code></div>
+            <div class="right">边框填充指定颜色</div>
+        </div>
+
+        <h3>3. 纹理过滤模式（tx.fil）</h3>
+        <div class="bar">
+            <div class="left"><code>gle.tex_fil_pixel</code></div>
+            <div class="right">最近邻采样（像素风）</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gle.tex_fil_linear</code></div>
+            <div class="right">线性插值（平滑，放大时默认）</div>
+        </div>
+        <div class="bar">
+            <div class="left">缩小模式（<code>mode_min</code>）</div>
+            <div class="right">
+                可使用组合：<code>gle.tex_fil_ll</code>（默认）、<code>gle.tex_fil_lp</code>、<code>gle.tex_fil_jl</code>、<code>gle.tex_fil_jp</code><br>
+                <span class="red">第一个字母：</span><code>l</code>（精确选择mipmap级别）/ <code>j</code>（近似选择）<br>
+                <span class="red">第二个字母：</span><code>l</code>（线性过滤）/ <code>p</code>（像素过滤）
+            </div>
+        </div>
+
+        <h2>二、窗口与主循环（gl_t）</h2>
+        <h3>构造函数</h3>
+        <code class="block">gl_t gl(bool 使用OpenGL3.3, int 宽度, int 高度, const char* 标题);</code>
+
+        <h3>成员</h3>
+        <code>winw, winh</code> 为窗口的宽、高。
+
+        <h3>成员函数</h3>
+        <div class="bar">
+            <div class="left"><code>gl.main_loop()</code></div>
+            <div class="right">进入主循环，每帧自动调用用户定义的 <code>show()</code> 函数。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.close_win()</code></div>
+            <div class="right">请求关闭窗口（在 <code>show()</code> 中调用）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.kpr(<a href="GLenum_Key_Constant_List.html">按键常量</a>)</code></div>
+            <div class="right">检测指定按键是否被按下（返回 <code>bool</code>）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.kprf(按键常量)</code></div>
+            <div class="right">检测按键是否刚被按下（仅触发一次），返回 <code>bool</code>。用于检测单次按键</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.clr_col(r,g,b,a)</code> / <code>gl.clr_rgb(0xRRGGBB)</code> / <code>gl.clr_rgba(0xRRGGBBAA)</code></div>
+            <div class="right">清屏并填充指定颜色。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.triangle(int 起始索引, int 三角形数)</code></div>
+            <div class="right">绘制三角形（需先绑定网格缓冲和着色器）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.dept(bool 启用)</code></div>
+            <div class="right">启用/禁用深度测试（3D渲染必须开启）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.blend(bool 启用)</code></div>
+            <div class="right">启用/禁用透明度混合（默认开启）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.cull_face(bool 启用)</code></div>
+            <div class="right">启用/禁用面剔除（优化性能）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.mouse()</code></div>
+            <div class="right">启用鼠标捕获并设置回调（配合 <code>mousectrl_t</code> 使用）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.mouse_cb()</code></div>
+            <div class="right">仅设置鼠标回调（不隐藏鼠标），用于非捕获模式。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.line()</code> / <code>gl.fill()</code></div>
+            <div class="right">切换为线框模式 / 填充模式（调试用）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.w_div_h()</code></div>
+            <div class="right">返回窗口宽高比（用于透视投影计算）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.set_win(int 宽, int 高)</code></div>
+            <div class="right">在 <code>framebuffer_size_callback</code> 中调用，更新内部宽高记录。</div>
+        </div>
+
+        <h2>三、网格缓冲（mesh_buf_t）</h2>
+        <h3>构造函数</h3>
+        <code class="block">mesh_buf_t mb(const char* ve文件, const char* in文件, GLenum 使用模式);</code>
+        <code class="block">mesh_buf_t mb(ve_t& 顶点对象, in_t& 索引对象, GLenum 使用模式, bool 忽略);</code>
+
+        <h3>成员函数</h3>
+        <div class="bar">
+            <div class="left"><code>mb.bind()</code></div>
+            <div class="right">绑定此网格缓冲，后续绘制将使用其数据。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb.clr()</code></div>
+            <div class="right">释放所有数据内存。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb.upd_ve(...)</code> / <code>mb.upd_in(...)</code> / <code>mb.upd_t(...)</code></div>
+            <div class="right">整体更新顶点/索引数据（详见本章第一节）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb.upd_ve_p(...)</code> / <code>mb.upd_in_p(...)</code></div>
+            <div class="right">局部更新部分顶点/索引数据（性能更优）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb.read_vi(ve文件, in文件)</code></div>
+            <div class="right">从文件加载顶点和索引数据（替换当前数据）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb.upload(gle.[...])</code></div>
+            <div class="right">将当前数据上传至 GPU。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb._ve</code> / <code>mb._in</code></div>
+            <div class="right">顶点数据对象和索引数据对象（可直接修改）。</div>
+        </div>
+
+        <h2>四、纹理（texture_t）</h2>
+        <h3>构造函数</h3>
+        <code class="block">texture_t tx(const char* 图片路径, bool 忽略, int 默认纹理单元=0);</code>
+
+        <h3>成员函数</h3>
+        <div class="bar">
+            <div class="left"><code>tx.build(...)</code></div>
+            <div class="right">参数及功能同构造函数。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tx.bind()</code></div>
+            <div class="right">绑定到默认纹理单元。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tx.bind(int 单元编号)</code></div>
+            <div class="right">绑定到指定的纹理单元（0~15）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tx.wrap(GLenum S轴模式, GLenum T轴模式)</code></div>
+            <div class="right">设置纹理坐标超出范围时的行为（见 gle 常量）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tx.fil(GLenum 缩小模式, GLenum 放大模式)</code></div>
+            <div class="right">设置纹理缩放时的过滤方式（见 gle 常量）。</div>
+        </div>
+
+        <h3>公开成员</h3>
+        <div class="bar"><div class="left"><code>pw, ph</code></div><div class="right">纹理宽度、高度（像素）。</div></div>
+        <div class="bar"><div class="left"><code>un</code></div><div class="right">默认纹理单元编号。</div></div>
+        <div class="bar"><div class="left"><code>chan</code></div><div class="right">通道数（1/3/4）。</div></div>
+
+        <h3>全局边框颜色函数</h3>
+        <div class="bar">
+            <div class="left"><code>tex_border_col(float r,g,b,a)</code></div>
+            <div class="right">设置 <code>clamp_to_border</code> 模式的边框颜色（0~1）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tex_border_rgb(0xRRGGBB)</code></div>
+            <div class="right">同上，使用十六进制（不含透明度）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tex_border_rgba(0xRRGGBBAA)</code></div>
+            <div class="right">同上，包含透明度。</div>
+        </div>
+
+        <h2>五、着色器（shader_t）</h2>
+        <h3>构造函数</h3>
+        <code class="block">shader_t sd(const char* 顶点着色器路径, const char* 片段着色器路径);</code>
+
+        <h3>成员函数</h3>
+        <div class="bar">
+            <div class="left"><code>sd.use()</code></div>
+            <div class="right">激活此着色器程序。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sd.setb("变量名", bool)</code></div>
+            <div class="right">传递布尔值 uniform。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sd.seti("变量名", int)</code></div>
+            <div class="right">传递整数 uniform（纹理单元编号用此函数）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sd.setf("变量名", float)</code></div>
+            <div class="right">传递单精度小数 uniform。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sd.set2f/set3f/set4f(...)</code></div>
+            <div class="right">传递 <code>vec2</code> / <code>vec3</code> / <code>vec4</code> 向量 uniform（支持重载）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sd.setm3("变量名", mat3)</code> / <code>sd.setm4("变量名", mat4)</code></div>
+            <div class="right">传递 3x3 / 4x4 矩阵 uniform（用于法线矩阵或 MVP 矩阵）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sd.setlight("变量名", lt)</code> / <code>sd.setlight_array("数组名",下标, lt)</code></div>
+            <div class="right">传递光源/光源数组 uniform。</div>
+        </div>
+        <h3>其他</h3>
+<code class="block">sdu(string uniform数组名,int 下标);
+sdu(string uniform数组名,int 下标,string 成员);
+sdu(string uniform数组名,string 成员);</code> 用于替换 <code>"变量名"</code> ，以传递 数组、结构体数组、结构体 uniform。
+        
+        <br>
+        GLSL详见 十二、着色器语言。
+
+        <h2>六、变换（trans_t）</h2>
+        <code class="block">trans_t tr;</code>
+        <div class="bar">
+            <div class="left"><code>tr.trans(vec3 位移)</code></div>
+            <div class="right">设置平移量。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tr.rot(vec3 轴, float 角度)</code></div>
+            <div class="right">绕任意轴旋转（角度制，遵循右手定则）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tr.rote(vec3 欧拉角, string 顺序="YXZ")</code></div>
+            <div class="right">按欧拉角旋转（角度制，默认按 Y-X-Z 顺序）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tr.scale(vec3 缩放) / tr.scale(float 统一缩放)</code></div>
+            <div class="right">设置缩放倍数。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tr.rad = true/false</code></div>
+            <div class="right">切换角度制（<code>false</code>）与弧度制（<code>true</code>），默认为 <code>false</code>。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tr.matr()</code></div>
+            <div class="right">返回组合后的 4x4 变换矩阵（顺序固定：缩放 → 旋转 → 平移）。</div>
+        </div>
+
+        <h2>七、摄像机（camera_t）</h2>
+        <code class="block">camera_t cam(vec3 位置, float 偏航=-90, float 俯仰=0, float 滚转=0);</code>
+
+        <h3>位置与视角控制</h3>
+        <div class="bar">
+            <div class="left"><code>cam.pos</code></div>
+            <div class="right">摄像机位置（可直接修改）。</div>
+        </div>
+        <div class="bar"><div class="left"><code>cam.cplim</code></div><div class="right">俯仰角限制（默认 89°）。</div></div>
+        <div class="bar">
+            <div class="left"><code>cam.set_yaw/pitch/roll(float 角度)</code></div>
+            <div class="right">分别设置三个欧拉角（角度制）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cam.get_yaw/pitch/roll/front/right/up()</code></div>
+            <div class="right">获取当前角度值/方向（前、右、上）向量。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cam.mov_look(vec2 偏移量, bool 限制俯仰=true)</code></div>
+            <div class="right">根据鼠标偏移量改变视角（乘以灵敏度 <code>cam.sensit</code>）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cam.scl_look(float 滚轮偏移, float 最小FOV=1, float 最大FOV=45)</code></div>
+            <div class="right">改变视场角（实现缩放效果）。</div>
+        </div>
+
+        <h3>移动（需传入时间差 dt）</h3>
+        <div class="bar">
+            <div class="left"><code>cam.movef(float dt)</code></div>
+            <div class="right">向前方移动（速度 <code>cam.mov_spd</code>）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cam.mover(float dt)</code></div>
+            <div class="right">向右方移动。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cam.moveu(float dt)</code></div>
+            <div class="right">向绝对上方（沿世界空间正Y轴）移动。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cam.keepy = 1</code></div>
+            <div class="right">锁定 Y 轴高度（防止俯仰时“飞起来”）。moveu不受限制。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cam.view()</code></div>
+            <div class="right">返回观察矩阵（View Matrix）。</div>
+        </div>
+
+        <h2>八、计时器（timer_t）</h2>
+        <code class="block">timer_t tim; // 默认不限帧率</code>
+        <code class="block">timer_t tim(int 目标帧率); // 配合 fslp() 使用</code>
+        
+        <div class="bar">
+            <div class="left"><code>tim.cur</code></div>
+            <div class="right">从程序启动/上次重置到当前帧的总时间（秒）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tim.dis</code></div>
+            <div class="right">上一帧到本帧的时间差（秒，用于速度平滑）。</div>
+        </div>
+        <div class="bar"><div class="left"><code>tim.abso</code></div><div class="right">自程序启动的绝对时间（秒）。</div></div>
+        <div class="bar"><div class="left"><code>tim.offs</code></div><div class="right">cur与abso之差</div></div>
+        <div class="bar"><div class="left"><code>tim.fps</code> / <code>tim.curf</code></div><div class="right">目标帧率 / 当前帧计数（内部使用）。</div></div>
+
+        <br>
+
+        <div class="bar">
+            <div class="left"><code>tim.upd()</code></div>
+            <div class="right">在每帧开头调用，更新时间（必须调用）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tim.fslp()</code></div>
+            <div class="right">在每帧末尾调用，将帧率锁定为构造时设定的值。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>tim.clear()</code></div>
+            <div class="right">重置定时器。将 <code>cur</code> 设为 0。</div>
+        </div>
+
+        <h2>九、数据结构（ve_t / in_t）</h2>
+        <h3>顶点数据（ve_t）</h3>
+        <div class="bar">
+            <div class="left"><code>int mloc</code></div>
+            <div class="right">顶点属性数量。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vector&lt;int&gt; siz</code></div>
+            <div class="right">每个属性的分量数（如 3 表示 vec3）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vector&lt;float&gt; data</code></div>
+            <div class="right">按顶点顺序连续存储的所有属性数据。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>clr()</code></div>
+            <div class="right">清空数据释放内存。</div>
+        </div><div class="bar"><div class="left"><code>ve.append(vector&lt;float&gt;)</code></div><div class="right">追加顶点数据。</div></div>
+        <div class="bar"><div class="left"><code>ve.calc_sum()</code></div><div class="right">计算单个顶点总分量数（<code>mloc</code> 和 <code>siz</code> 决定）。</div></div>
+
+        <h3>索引数据（in_t）</h3>
+        <div class="bar">
+            <div class="left"><code>vector&lt;unsigned int&gt; data</code></div>
+            <div class="right">每三个一组构成一个三角形（顶点编号）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>clr()</code></div>
+            <div class="right">清空数据释放内存。</div>
+        </div>
+        <div class="bar"><div class="left"><code>in.append(vector&lt;unsigned int&gt;)</code></div><div class="right">追加索引数据。</div></div>
+
+        <h2>十、鼠标控制（mousectrl_t）</h2>
+        <code class="block">mousectrl_t g_mouse;</code>
+        <div class="bar">
+            <div class="left"><code>g_mouse.init(float xpos, float ypos)</code></div>
+            <div class="right">在 <code>mouse_callback</code> 开头调用，消除首次跳跃。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>g_mouse.set(float xpos, float ypos)</code></div>
+            <div class="right">记录当前鼠标位置（每帧调用）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>g_mouse.offs()</code></div>
+            <div class="right">返回 <code>vec2</code> 偏移量（当前帧相对于上一帧的移动）。</div>
+        </div>
+
+        <h2>十一、全局数学函数与运算符</h2>
+        <div class="bar">
+            <div class="left"><code>persp(fov, aspect, near, far)</code></div>
+            <div class="right">生成透视投影矩阵（<code>aspect</code> 通常用 <code>gl.w_div_h()</code>）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>ortho(left, right, bottom, top, near, far)</code></div>
+            <div class="right">生成正交投影矩阵。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>~vec2/vec3/vec4</code></div>
+            <div class="right">向量标准化（长度变为1，方向不变）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>u ^ v</code></div>
+            <div class="right">计算两个向量之间的夹角（返回角度制数值）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec4 *= mat4</code></div>
+            <div class="right">将矩阵左乘向量（等价于 <code>vec = mat * vec</code>）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>void norma(float& ang);</code></div>
+            <div class="right">将角度归一化到 (-180, 180] 范围内，用于处理累计角度溢出</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>transd() / transr()</code></div>
+            <div class="right">已废弃，恕不提供用法</div>
+        </div>
+
+        <h2>十二、着色器语言</h2>
+
+        <h3>1. 基本结构</h3>
+        <code class="block">#version 330 core
+// 变量声明
+void main() {
+    // 执行逻辑
+}</code>
+
+        <h3>2. 变量限定符</h3>
+        <div class="bar">
+            <div class="left"><code>in</code></div>
+            <div class="right">输入变量。顶点着色器中用 <code>layout (location = N) in</code> 获取顶点属性。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>out</code></div>
+            <div class="right">输出变量，传递至下一阶段。片段着色器必须定义恰好一个 <code>out vec4</code> 作为最终颜色。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>uniform</code></div>
+            <div class="right">CPU 端传入的全局只读数据，所有着色器共享。</div>
+        </div>
+
+        <h3>3. 核心数据类型</h3>
+        <div class="bar">
+            <div class="left"><code>float / int / bool / uint</code></div>
+            <div class="right">标量。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec2 / vec3 / vec4</code></div>
+            <div class="right">向量。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mat2 / mat3 / mat4</code></div>
+            <div class="right">矩阵。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sampler2D</code></div>
+            <div class="right">纹理（用于 <code>uniform</code> ）</div>
+        </div>
+
+        <h3>4. 分量访问与重组</h3>
+        <div class="bar">
+            <div class="left">坐标</div>
+            <div class="right"><code>.x .y .z .w</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">颜色</div>
+            <div class="right"><code>.r .g .b .a</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">纹理坐标</div>
+            <div class="right"><code>.s .t .p .q</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">重组示例</div>
+            <div class="right"><code>someVec.xxyz</code>、<code>anotherVec.rgb</code>（可任意组合）</div>
+        </div>
+
+        <h3>5. 内置变量（顶点着色器）</h3>
+        <div class="bar">
+            <div class="left"><code>gl_Position</code></div>
+            <div class="right">输出标准化设备坐标（NDC），<code>w</code> 分量通常设为 <code>1.0</code>。</div>
+        </div>
+
+        <h3>6. 常用内置函数</h3>
+        <div class="bar">
+            <div class="left"><code>texture(纹理, 纹理坐标)</code></div>
+            <div class="right">返回纹理上某个坐标的颜色（<code>vec4</code>）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mix(a, b, t)</code></div>
+            <div class="right">线性混合两个值（<code>t</code> 为 <code>b</code> 的比例）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>normalize(v)</code></div>
+            <div class="right">将向量标准化（长度为 1）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>dot(u, v)</code></div>
+            <div class="right">点乘（返回标量）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cross(u, v)</code></div>
+            <div class="right">叉乘（仅限 <code>vec3</code>，返回 <code>vec3</code>）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>reflect(I, N)</code></div>
+            <div class="right">反射向量（用于镜面高光）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>clamp(x, min, max)</code></div>
+            <div class="right">将 <code>x</code> 限制在 <code>[min, max]</code> 区间。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>radians(deg)</code> / <code>degrees(rad)</code></div>
+            <div class="right">角度与弧度互转。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>pow(x, y)</code></div>
+            <div class="right">计算 <code>x</code> 的 <code>y</code> 次幂。</div>
+        </div>
+
+        <div class="tipst">注意事项</div>
+        <div class="tips">
+            <span class="red">未使用的 <code>uniform</code> 变量会被编译器静默移除</span>，可能导致传递失败。<br>
+            片段着色器中只能有一个 <code>out</code> 变量（作为最终颜色输出），不可多写。
+        </div>
+
+        <h3>7. 着色器数学库 <code>&lt;math.ash&gt;</code></h3>
+        <div class="bar">
+            <div class="left">求两向量夹角（角度制）</div>
+            <div class="right"><code>float angle(vec2 v1, vec2 v2);</code><br><code>float angle(vec3 v1, vec3 v2);</code><br><code>float angle(vec4 v1, vec4 v2);</code></div>
+        </div> 
+
+        <h3>8. 着色器光照库 <code>&lt;phong.fsh&gt;</code></h3>
+
+        <h4>结构体：material_t（材质）</h4>    
+        <div class="bar">
+            <div class="left"><code>vec3 diff</code></div>
+            <div class="right">漫反射颜色（物体本身颜色），也是强度。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec3 spec</code></div>
+            <div class="right">镜面反射强度（RGB），也是颜色。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>float shini</code></div>
+            <div class="right">高光反光度（值越大高光越集中，推荐 8~128）。</div>
+        </div>
+
+        <h4>结构体：light_t（光源，注意C++中也有相同的结构体）</h4>
+        <div class="bar">
+            <div class="left"><code>vec3 dir</code></div>
+            <div class="right">方向光的光源方向，或点光源/聚光灯下光源指向片段的向量（不应归一化）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec3 spot_dir</code></div>
+            <div class="right">聚光灯的主轴方向（仅聚光灯使用）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec3 amb</code></div>
+            <div class="right">环境光强度（RGB），也是颜色。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec3 diff</code></div>
+            <div class="right">漫反射强度（RGB），也是颜色。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec3 spec</code></div>
+            <div class="right">镜面反射颜色（高光颜色），也是强度。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>float kc / kl / kq</code></div>
+            <div class="right">衰减系数，仅点光源和聚光灯有效。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>float icutoff / ocutoff</code></div>
+            <div class="right">聚光灯内/外裁剪角（角度制），仅聚光灯有效。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>int type</code></div>
+            <div class="right">光源类型：<code>0</code> 方向光，<code>1</code> 点光源，<code>2</code> 聚光灯，<code>-1</code> 无效。</div>
+        </div>
+        <img src="2.3_comp.png" alt="" class="msimg">
+        <div class="tipst">衰减系数</div>
+        <div class="tips">
+            由你想让光线传播直到完全衰减的距离决定。
+            <div class="bar">
+                <div class="left" style="width: 50%;">
+                    <div class="bar">
+                        <div class="left"><strong>距离</strong></div>
+                        <span class="hide">：</span>
+                        <div class="right"><code><strong>kc kl kq</strong></code></div>
+                    </div>
+                    <div class="bar">
+                        <div class="left">7</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.7 1.8</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">13</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.35 0.44</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">20</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.22 0.20</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">32</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.14 0.07</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">50</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.09 0.032</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">65</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.07 0.017</div>
+                    </div>
+                </div>
+                <div class="right">
+                    <div class="bar">
+                        <div class="left"><strong>距离</strong></div>
+                        <span class="hide">：</span>
+                        <div class="right"><code><strong>kc kl kq</strong></code></div>
+                    </div>
+                    <div class="bar">
+                        <div class="left">100</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.045 0.0075</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">160</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.027 0.0028</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">200</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.022 0.0019</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">325</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.014 0.0007</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">600</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.007 0.0002</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">3250</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.0014 0.000007</div>
+                    </div>
+                    <div class="bar">
+                        <div class="left">不衰减</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.0 0.0</div>
+                    </div>
+                </div>
+            </div>
+            <a href="http://www.ogre3d.org/tikiwiki/tiki-index.php?page=-Point+Light+Attenuation" class="copyright">Data From Here.</a>
+        </div>
+
+        <h4>函数：lighting（光照计算）</h4>
+        <div class="bar">
+            <div class="left">函数调用</div>
+            <div class="right"><code>vec4 lighting(vec3 norm, vec3 v_dir, material_t materi, light_t lt);</code></div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>norm</code></div>
+            <div class="right">法线（需预先归一化）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>v_dir</code></div>
+            <div class="right">视线方向，从片段指向摄像机（即摄像机坐标 - 片段坐标）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>materi</code></div>
+            <div class="right">材质。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>lt</code></div>
+            <div class="right">光源。</div>
+        </div>
+        <div class="bar">
+            <div class="left">返回值</div>
+            <div class="right">最终光照颜色（<code>vec4</code>，alpha 固定为 <code>1.0</code>）。</div>
+        </div>
+
+
+    </body>
+</html>

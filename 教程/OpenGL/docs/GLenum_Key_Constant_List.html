@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>按键常量表</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <h1>按键常量表</h1>
+        <h2>1. 可见字符</h2>
+        直接使用字符字面量（如 <code>';'</code> ）或 ASCII码 即可。
+        <br> 一个键上有两个字符的，用下面的那个。例如：
+        <span class="key">: <br>;</span> 这个按键就该用 <code>';'</code> 而不是 <code>':'</code> 。
+        <br>
+        字母要用大写的。<br>
+        不适用于换行、制表符。
+
+        <h2>2. 控制、不可见字符</h2>
+        如下所示。
+
+        <h3>主键盘区左侧</h3>
+        <div class="bar">
+            <div class="left">
+                <code>GLFW_KEY_TAB</code><br>
+                <code>GLFW_KEY_CAPS_LOCK</code><br>
+                <code>GLFW_KEY_LEFT_SHIFT</code><br>
+                <code>GLFW_KEY_LEFT_CONTROL</code><br>
+                <code>GLFW_KEY_LEFT_SUPER</code><br>
+                <code>GLFW_KEY_LEFT_ALT</code>
+            </div>
+            <div class="right">
+                Tab<br>
+                Caps Lock<br>
+                左 Shift<br>
+                左 Ctrl<br>
+                左 Windows<br>
+                左 Alt
+            </div>
+        </div>
+
+        <h3>主键盘区右侧</h3>
+        <div class="bar">
+            <div class="left">
+                <code>GLFW_KEY_BACKSPACE</code><br>
+                <code>GLFW_KEY_ENTER</code><br>
+                <code>GLFW_KEY_RIGHT_SHIFT</code><br>
+                <code>GLFW_KEY_RIGHT_CONTROL</code><br>
+                <code>GLFW_KEY_MENU</code><br>
+                <code>GLFW_KEY_RIGHT_SUPER</code><br>
+                <code>GLFW_KEY_RIGHT_ALT</code>
+            </div>
+            <div class="right">
+                Backspace<br>
+                Enter<br>
+                右 Shift<br>
+                右 Ctrl<br>
+                菜单键<br>
+                右 Windows<br>
+                右 Alt
+            </div>
+        </div>
+
+        <h3>箭头</h3>
+        <div class="bar">
+            <div class="left">
+                <code>GLFW_KEY_UP</code><br>
+                <code>GLFW_KEY_DOWN</code><br>
+                <code>GLFW_KEY_LEFT</code><br>
+                <code>GLFW_KEY_RIGHT</code>
+            </div>
+            <div class="right">
+                上箭头<br>
+                下箭头<br>
+                左箭头<br>
+                右箭头
+            </div>
+        </div>
+
+        <h3>上方一条+右上控制区</h3>
+        <div class="bar">
+            <div class="left">
+                <code>GLFW_KEY_ESCAPE</code><br>
+                <code>GLFW_KEY_F1</code><br>
+                <code>GLFW_KEY_F2</code><br>
+                ...<br>
+                <code>GLFW_KEY_F12</code><br>
+                <br>   <!-- 分割线替换为左右各一个空行 -->
+                <code>GLFW_KEY_PRINT_SCREEN</code><br>
+                <code>GLFW_KEY_SCROLL_LOCK</code><br>
+                <code>GLFW_KEY_PAUSE</code><br>
+                <br>   <!-- 分割线替换为左右各一个空行 -->
+                <code>GLFW_KEY_INSERT</code><br>
+                <code>GLFW_KEY_DELETE</code><br>
+                <code>GLFW_KEY_HOME</code><br>
+                <code>GLFW_KEY_END</code><br>
+                <code>GLFW_KEY_PAGE_UP</code><br>
+                <code>GLFW_KEY_PAGE_DOWN</code>
+            </div>
+            <div class="right">
+                Escape<br>
+                F1<br>
+                F2<br>
+                ...<br>
+                F12<br>
+                <br>
+                Print Screen<br>
+                Scroll Lock<br>
+                Pause<br>
+                <br>
+                Insert<br>
+                Delete<br>
+                Home<br>
+                End<br>
+                Page Up<br>
+                Page Down
+            </div>
+        </div>
+
+        <h3>小键盘区</h3>
+        <div class="bar">
+            <div class="left">
+                <code>GLFW_KEY_NUM_LOCK</code><br>
+                <code>GLFW_KEY_KP_0</code><br>
+                <code>GLFW_KEY_KP_1</code><br>
+                ...<br>
+                <code>GLFW_KEY_KP_9</code><br>
+                <code>GLFW_KEY_KP_DECIMAL</code><br>
+                <code>GLFW_KEY_KP_ADD</code><br>
+                <code>GLFW_KEY_KP_SUBTRACT</code><br>
+                <code>GLFW_KEY_KP_MULTIPLY</code><br>
+                <code>GLFW_KEY_KP_DIVIDE</code><br>
+                <code>GLFW_KEY_KP_ENTER</code>
+            </div>
+            <div class="right">
+                Num Lock<br>
+                小键盘 0<br>
+                小键盘 1<br>
+                ...<br>
+                小键盘 9<br>
+                小键盘小数点<br>
+                小键盘加号<br>
+                小键盘减号<br>
+                小键盘乘号<br>
+                小键盘除号<br>
+                小键盘 Enter
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>2.1课 练习2 答案</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>2.1课 练习2 答案</h1>
+        只需要稍微修改你的代码：
+<code class="block">// ... [set mate]
+
+// calc light color
+vec3 lt_col(
+    sin(2.0f*tim.cur),
+    sin(0.7f*tim.cur),
+    sin(1.3f*tim.cur)
+);
+
+// set light
+light_t lt;
+lt.type=1;
+lt.amb=lt_col*vec3(0.2f,0.2f,0.2f); 
+lt.diff=lt_col*vec3(0.5f,0.5f,0.5f);
+lt.spec=lt_col*vec3(1.0f,1.0f,1.0f);
+// ...
+</code>
+    </body>
+</html>

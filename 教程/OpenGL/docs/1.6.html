@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>1.6 坐标系统</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>1.6 坐标系统</h1>
+        我们学过：
+        <div class="caut">注意（来自 1.2课）</div>
+        <div class="cau">
+            经过此步骤之后，所有的顶点坐标，在三个轴上均应在 -1.0 ~ 1.0 的范围内。否则会被丢弃。符合此要求的坐标又叫做 <span class="def">标准化设备坐标（NDC）</span>。
+        </div>
+        这就出现了一个问题：我们通常会定义自己的坐标系统，那么就要在顶点着色器中变换这些坐标。我们要怎么变换呢？<br>
+        <h2>局部空间</h2>
+        为了方便，我们通常给每个物体一个自己的坐标系。这样就可以方便地表示各部分的相对坐标，而不用关心它最终被放到世界中的哪个位置。这个坐标系称为<span class="def">局部空间</span>。<br>
+        <h2>世界空间</h2>
+        我们当然需要一个坐标系，来作为整个游戏世界使用。这就是<span class="def">世界空间</span>。<br>
+        <h3>从 局部空间 变换到 世界空间</h3>
+        只需要乘 <code>trans_t</code> 生成的矩阵，即<span class="def">模型(Model)矩阵</span>，即可很方便地表示物体的位置、旋转和缩放。
+        <code class="block">sd.setm4("model",tr.matr());</code>
+        <code class="block">gl_Position=model*vec;</code>
+        <h2>观察空间</h2>
+        我们是站在自己的视角进行观察的，所以，坐标必定要转化为以自己为中心的<span class="def">观察空间</span>。
+        <h3>从 世界空间 变换到 观察空间</h3>
+        我们将会使用一种叫做<span class="def">摄像机</span>的对象来获取 变换所需的<span class="def">观察(View)矩阵</span>：
+<code class="block">camera_t cam(vec3 位置,float 偏航角_角度制=-90.0f,俯仰角=0.0f,滚转角=0.0f); 
+camera_t(float 位置X,Y,Z,float 偏航角=-90.0f,float 俯仰角=0.0f,float 滚转角=0.0f);
+</code>
+        <img src="1.6_euler.png" alt="" class="bigimg">
+        <div class="bar">
+            <div class="left"><code>vec3 pos</code></div>
+            <span class="hide">：</span>
+            <div class="right">摄像机位置。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>set_yaw/pitch/roll(float 角度)</code></div>
+            <span class="hide">：</span>
+            <div class="right">设置偏航角、俯仰角、滚转角。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>float get_yaw/pitch/roll()</code></div>
+            <span class="hide">：</span>
+            <div class="right">获取偏航角、俯仰角、滚转角。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>mat4 view()</code></div>
+            <span class="hide">：</span>
+            <div class="right">获取观察矩阵。</div>
+        </div>
+        <h2>最后一步</h2>
+        我们需要一个<span class="def">投影(Projection)矩阵</span>来进行最后一步变换。<br>
+        有两种投影可供选择：
+        <h3>正射投影</h3>
+        这是一种无视远近的投影方式。它就像用一个矩形的盒子框住场景，盒子内的物体会被原样显示，远处的物体不会变小。这种投影常用于2D游戏、UI界面或工程制图。
+        <img src="1.6_ortho.png" alt="" class="smallimg">
+        通过以下函数计算这个矩阵：
+        <code class="block">ortho(float 左,右,下,上,近,远);</code>
+        <div class="bar">
+            <div class="left">左，右，下，上</div>
+            <span class="hide">：</span>
+            <div class="right">矩形的左、右、下、上边缘 到图中红点（相机正对着的点）的距离。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">近，远</div>
+            <span class="hide">：</span>
+            <div class="right">近平面（图中黄色）、远平面（蓝色）到摄像机的距离。</div>
+        </div>
+        <h3>透视投影</h3>
+        透视投影模拟人眼观察物体的效果，产生“近大远小”的立体感。<br>
+<code class="block">persp(视场角_推荐45.0f,gl.w_div_h(),近,远);</code>
+        <img src="1.6_persp.png" alt="" class="smallimg">
+        <img src="1.6_comp.png" alt="">
+
+        接下来，我们就可以计算得出最终的向量了：
+<code class="block">uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;</code>
+        <code class="block">gl_Position=proj*view*model*vec4(v_pos.x,v_pos.y,v_pos.z,1.0);</code>
+        这三个矩阵，合称 <strong>MVP 矩阵</strong>。
+        <h2>终于可以渲染3D物体了</h2>
+        <h3 class="inline">例1. </h3> 把 <span class="file">1.4课 eg2</span> 中的矩形渲染成 3D 的。<br>
+        
+        我们首先创建 trans_t：
+        <code class="block">trans_t tr;</code>
+        然后绕 X轴旋转 -55°：
+        <code class="block">tr.rot(vec3(1.0f,0.0f,0.0f),-55.0f);</code>
+        之后创建摄像机，位置向后移动 3.0f：
+        <code class="block">camera_t cam(0.0f,0.0f,3.0f);</code>
+        定义投影矩阵，视场角设置为摄像机视场角：
+        <code class="block">mat4 proj=persp(cam.fov,gl.w_div_h(),0.1f,100.0f);</code>
+        像上面那样改一下着色器并传入三矩阵：
+<code class="block">uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;</code>
+        <code class="block">gl_Position=proj*view*model*vec4(v_pos.x,v_pos.y,v_pos.z,1.0);</code>
+<code class="block">sd.setm4("model",tr.matr());
+sd.setm4("view",cam.view());
+sd.setm4("proj",proj);</code>
+        <span class="file">eg1</span>。
+        <img src="1.6_eg1.png" alt="" class="smallimg">
+
+        <h3>例2. 渲染一个立方体！</h3>
+        数据 <span class="file">cube</span> 。<br>
+        修改导入的数据：<code class="block">mesh_buf_t mb("res/cube.ve","res/cube.in",gle.draw_never_chg);</code>
+        我们的新数据里的正方体有 12 个三角形，因此还要修改绘制三角形的代码：
+        <code class="block">gl.triangle(0,12);</code>
+        由于数据的改变（删除了顶点颜色属性），我们还要修改着色器，删除多余的layout和uniform。
+        <br>
+        为了让它有趣一些，我们让这个立方体随时间旋转。<br>
+        声明计时器：<code class="block">timer_t tim;</code>
+        每帧更新：<code class="block">tim.upd();</code>
+        设置旋转角度：<code class="block">tr.rot(vec3(0.5f,1.0f,0.0f),50.0f*tim.cur); </code>
+        最后的效果有点奇怪：有的时候后面的面会挡住前面的面。之所以这样是因为OpenGL是一个三角形一个三角形地来绘制你的立方体的，所以即便之前那里有东西它也会覆盖之前的像素。<br>
+        解决办法：开启<span class="def">深度测试</span>。它会检查像素到摄像机之间的距离，确保距离近的覆盖远的。代码：
+        <code class="block">gl.dept(bool 是否启用);</code>
+        当然，细心的人可能会注意到，我们的箱子有些透明。这是由于我们对不透明度的计算有些问题。有两种解决方案：<br>
+        1. （自己先试一下）修改片段着色器，将不透明度始终设为1；<br>
+        2. 禁用混合。<br>
+        <div class="tipst">混合</div>
+        <div class="tips">
+            混合可以用于根据不透明度，将几种颜色混合起来，就像有色眼镜的效果。默认启用。<br>
+            <code class="block">gl.blend(bool 是否启用);</code>
+        </div>
+        <span class="file">eg2</span>。<br>
+        <h3 class="inline">实验1. </h3>试着修改相机视场角。看看有什么样的变化。<br>
+        <h3 class="inline">例3. </h3> 渲染多个正方体。<br>
+        首先，我们在代码里加入10个正方体的位置信息：
+<code class="block">vec3 cube_pos[] = {
+	vec3( 0.0f,  0.0f,  0.0f), 
+	vec3( 2.0f,  5.0f, -15.0f), 
+	vec3(-1.5f, -2.2f, -2.5f),  
+	vec3(-3.8f, -2.0f, -12.3f),  
+	vec3( 2.4f, -0.4f, -3.5f),  
+	vec3(-1.7f,  3.0f, -7.5f),  
+	vec3( 1.3f, -2.0f, -2.5f),  
+	vec3( 1.5f,  2.0f, -2.5f), 
+	vec3( 1.5f,  0.2f, -1.5f), 
+	vec3(-1.3f,  1.0f, -1.5f)  
+};</code>
+    那么，我们就要把画正方体的代码放在一个循环里了；因为每个正方体的位置不同，我们还要在画每个正方体前重新设定 <code>model</code>：
+<code class="block">for(int i=0;i&lt;10;i++){
+    tr.trans(cube_pos[i]);
+    sd.setm4("model",tr.matr());
+    gl.triangle(0,12);
+}</code>
+        如果你成功了，你可能会发现结果有些单调，所有正方体都是一个方向的。<br>
+        为了让它有趣一些，我们让每个立方体再次旋转。<br>
+        将两个旋转叠加在一起，用一个 <code>trans_t</code> 是无法完成的，因为属性会被覆盖。因此，我们另外声明一个 <code>trans_t</code> ：
+        <code class="block">trans_t tr,tri;</code>
+        根据编号设定旋转角度：
+        <code class="block">tri.rot(vec3(1.0f,0.3f,0.5f),i*20.0f);</code>
+        修改 <code>model</code> ，先让正方体旋转到正确的角度，然后再把它移动、按时间旋转：
+        <code class="block">sd.setm4("model",tr.matr()*tri.matr());</code>
+        <span class="file">eg3</span>。<del style="color: white;">效果很奇葩，对吧</del><br>
+        <h3 class="inline">练习1. </h3> 使用模型矩阵只让是3倍数的箱子旋转（以及第1个箱子），而让剩下的箱子保持静止。<span class="file">ex1</span><br>
+
+        <!-- -------------------------
+         -------------------------------
+         ------------------------------
+         ----------------------
+         -------------------------------------------------
+         -------------------------------
+         --------------------------
+        -->
+        <h1>本章总结</h1>
+
+        <div class="defbar">
+            <strong>坐标系统</strong> 是为了将模型自身的坐标一步步变换到屏幕像素而定义的一系列中间坐标系。
+        </div>
+
+        <h2>坐标空间</h2>
+        <div class="bar">
+            <div class="left">局部空间</div>
+            <span class="hide">：</span>
+            <div class="right">模型自己的坐标系，顶点坐标相对于模型中心。</div>
+        </div>
+        <div class="bar">
+            <div class="left">世界空间</div>
+            <span class="hide">：</span>
+            <div class="right">所有物体共用的全局坐标系。</div>
+        </div>
+        <div class="bar">
+            <div class="left">观察空间</div>
+            <span class="hide">：</span>
+            <div class="right">以摄像机为原点的坐标系。</div>
+        </div>
+
+        <h2>三种变换矩阵</h2>
+        <div class="bar">
+            <div class="left">模型矩阵 (Model)</div>
+            <span class="hide">：</span>
+            <div class="right">将物体从局部空间变换到世界空间。由 <code>trans_t</code> 生成。</div>
+        </div>
+        <div class="bar">
+            <div class="left">观察矩阵 (View)</div>
+            <span class="hide">：</span>
+            <div class="right">将世界空间变换到观察空间。由 <code>cam.view()</code> 获得。</div>
+        </div>
+        <div class="bar">
+            <div class="left">投影矩阵 (Projection)</div>
+            <span class="hide">：</span>
+            <div class="right">将观察空间变换到裁剪空间。分为正交投影（<code>ortho</code>）和透视投影（<code>persp</code>）。</div>
+        </div>
+
+        <h2>着色器中的 MVP 乘法顺序</h2>
+        <code class="block">gl_Position = proj * view * model * vec4(局部坐标, 1.0);</code>
+        <div class="red">注意：乘法从右向左进行，模型矩阵最先作用，投影矩阵最后作用。</div>
+
+        <h2>摄像机（camera_t）</h2>
+        <div class="bar">
+            <div class="left">构造函数</div>
+            <span class="hide">：</span>
+            <div class="right">
+                <code>camera_t(vec3 位置,float 偏航角=-90,俯仰角=0,滚转角=0);</code><br>
+                <code>camera_t(float 位置X,Y,Z,偏航角=-90,俯仰角=0,滚转角=0);</code>
+            </div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>set_yaw/pitch/roll(float 角度)</code></div>
+            <span class="hide">：</span>
+            <div class="right">分别设置偏航角、俯仰角、滚转角（角度制）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>float get_yaw/pitch/roll()</code></div>
+            <span class="hide">：</span>
+            <div class="right">获取当前的偏航角、俯仰角、滚转角。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mat4 view()</code></div>
+            <span class="hide">：</span>
+            <div class="right">获取观察矩阵（将世界坐标变换到摄像机视角）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>cam.fov</code></div>
+            <span class="hide">：</span>
+            <div class="right">摄像机视场角（默认 45.0°），用于透视投影计算。</div>
+        </div>
+        <div class="tipst">摄像机说明</div>
+        <div class="tips">
+            <div class="bar">
+                <div class="left">偏航角（yaw）</div>
+                <span class="hide">：</span>
+                <div class="right">绕 Y 轴旋转，左右看。</div>
+            </div>
+            <div class="bar">
+                <div class="left">俯仰角（pitch）</div>
+                <span class="hide">：</span>
+                <div class="right">绕 X 轴旋转，上下看，自动限制在 ±<code>cplim</code> 内。</div>
+            </div>
+            <div class="bar">
+                <div class="left">滚转角（roll）</div>
+                <span class="hide">：</span>
+                <div class="right">绕视线方向旋转，产生倾斜。</div>
+            </div>
+            <div class="bar">
+                <div class="left">角度单位</div>
+                <span class="hide">：</span>
+                <div class="right">所有角度采用<strong>角度制</strong>，内部自动归一化到 (-180, 180] 范围。</div>
+            </div>
+        </div>
+
+        <h2>深度测试与混合</h2>
+        <div class="bar">
+            <div class="left">深度测试</div>
+            <span class="hide">：</span>
+            <div class="right">确保近处物体遮挡远处物体。<code>gl.dept(是否启用);</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">混合</div>
+            <span class="hide">：</span>
+            <div class="right">处理透明度。默认启用， <code>gl.blend(是否启用);</code> 。</div>
+        </div>
+        
+
+        <br>
+        <a href="1.7.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

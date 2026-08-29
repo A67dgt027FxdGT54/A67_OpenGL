@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>1.4 纹理</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>1.4 纹理</h1>
+        想象一下这样一个场景：你正在制作《Minecraft》，需要给每个像素不同的颜色，因此，你需要为每个方块创建3000余个三角形，性能开销太大，而且太麻烦了。假如像素更多一些，情况还会更糟。因此，你急需一种方式给三角形图案，这就是<span class="def">纹理</span>。<br>
+        <div class="defbar">
+            <span class="def">纹理</span>是一张贴在三角形上的图片。
+        </div>
+
+        我们通过以下代码创建一个纹理对象：
+        <code class="block">texture_t tx(const char* img_path,bool _use_alpha,int _unit=0);</code>
+        <div class="bar">
+            <div class="left"><code>const char* img_path</code></div>
+            <span class="hide">：</span>
+            <div class="right">图片的路径。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>bool _use_alpha</code></div>
+            <span class="hide">：</span>
+            <div class="right">历史原因，此为无效参数，忽略即可。填入任何参数均可。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>int _unit</code></div>
+            <span class="hide">：</span>
+            <div class="right">默认纹理单元（后面会讲），默认为0。</div>
+        </div>
+
+        <h2>纹理坐标</h2>
+        为了让 OpenGL 知道我们要把图片贴在什么位置，我们需要给每个顶点指定：纹理上的哪个位置要贴在这个顶点上。这就是<span class="def">纹理坐标</span>。<br>
+        <img src="1.4_texture.png" alt="">
+        如图，左边是一张完整纹理的坐标，可以看见：
+        <div class="defbar">
+            纹理坐标的原点为左下角，范围为 0~1。横轴为 X轴（S轴），纵轴为 Y轴（T轴）。
+        </div>
+        右边是它贴在一个三角形上的样子，可以看到每个点都有一个纹理坐标，纹理上对应的位置就被贴在顶点上。<br>
+
+        <h3 class="inline">例1. </h3>以<span class="file">1.2课 ex1</span>为基础，绘制一个带有<span class="file">res/box.jpg</span>纹理的矩形。<br>
+        首先，我们要定义一个纹理对象：
+        <code class="block">texture_t tx("res/box.jpg",0)</code>
+        <div class="caut"></div>
+        <div class="cau">
+            在C++中，有默认值的参数，可以不填。此例中未填默认纹理单元。
+        </div>
+
+        然后调用此函数绑定纹理：
+        <code class="block">tx.bind();</code>
+
+        还需要改变一下顶点属性，以供存放纹理坐标：（预留了颜色属性）
+<code class="block"> 3
+ 3           3      2  // 位置（坐标）  颜色  纹理坐标
+-0.5 -0.5 0  1 0 0  0 0
+ 0.5 -0.5 0  0 1 0  1 0
+ 0.5  0.5 0  0 0 1  1 1
+-0.5  0.5 0  1 1 0  0 1</code>
+        相应改变顶点着色器，接收顶点属性，并转发至片段着色器：
+<code class="block">layout (location = 0) in vec3 v_pos;
+layout (location = 1) in vec3 v_col;
+layout (location = 2) in vec2 v_tex;
+out vec3 tcol;
+out vec2 ttex;</code>
+<code class="block">tcol=v_col;
+ttex=v_tex;</code>
+        并在片段着色器中接收：
+<code class="block">in vec3 tcol;
+in vec2 ttex;</code>
+        然后在片段着色器中定义一个2D纹理（一定要是uniform）：
+        <code class="block">uniform sampler2D tex;</code>
+        之后给输出颜色赋值：
+        <code class="block">fcol=texture(tex,ttex);</code>
+        <div class="defbar">
+            在片段着色器中调用 <code>texture(2D纹理,纹理坐标)</code> 可以得到当前绑定的纹理中，纹理坐标处的颜色。
+        </div>
+        我们还能将纹理和顶点颜色混合：
+        <code class="block">fcol=texture(tex,ttex)*vec4(tcol,1.0f);</code>
+        <div class="defbar">
+            将多个颜色相乘可以实现混合这些颜色的效果。
+        </div>
+        <h2>纹理单元</h2>
+        纹理为什么会是 uniform 呢？因为我们可以给它赋一个整数值（范围 0-15），作为它的编号，也就是<span class="def">纹理单元</span>。利用这个特性，我们可以同时绑定多个纹理。<br>
+        
+        上文中创建纹理代码的最后一个参数就是此纹理默认的单元，调用 <code>tx.bind();</code> 可以将它绑定到默认单元，还可以调用 <code>tx.bind(int unit);</code> 将它绑定到另一个单元。<br>
+
+        <h3 class="inline">例2. </h3> 在 <span class="file">eg1</span> 的箱子上贴一个笑脸图标（ <span class="file">res/face.png</span> ）。
+
+        首先，我们要定义并绑定两个纹理对象：（笑脸有透明度）
+<code class="block">texture_t tx1("res/box.jpg",0,0);
+texture_t tx2("res/face.png",1,1);</code>
+<code class="block">tx1.bind();
+tx2.bind();</code>
+        然后修改片段着色器，声明两个纹理并改变颜色赋值：
+<code class="block">uniform sampler2D tex1;
+uniform sampler2D tex2;</code>
+<code class="block">fcol=mix(
+    texture(tex1,ttex),
+    texture(tex2,ttex),
+    0.2
+); </code>
+        <div class="defbar">
+            <code>mix()</code> 将两种颜色（前两个参数）按给定比例（最后一个参数，代表第二种颜色的比例）混合。
+        </div>
+        最后给 uniform 赋值为对应的单元：
+<code class="block">sd.seti("tex1",0);
+sd.seti("tex2",1);</code>
+        完整代码 <span class="file">eg2</span><br>
+        <h3 class="inline">练习1. </h3> 修改片段着色器，左右翻转笑脸图案。<span class="file">ex1</span><br>
+        <h3 class="inline">练习2. </h3> 使用一个uniform变量作为mix函数的第三个参数来改变两个纹理可见度，使用上和下键来改变箱子或笑脸的可见度。<span class="file">ex2</span><br>
+
+        <h2>纹理环绕</h2>
+        那么，如果纹理坐标超出范围，会怎么样呢？<br>
+        这就是用于解决以上问题的。定义在 <code>gle</code> 内。多种选项有不同的效果。<br>
+        <div class="bar">
+            <div class="left"><strong>选项</strong></div>
+            <span class="hide">：</span>
+            <div class="right"><strong>效果</strong></div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>gle.tex_repeat</code></div>
+            <span class="hide">：</span>
+            <div class="right">（默认）重复纹理图像。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>gle.tex_mirrored_repeat</code></div>
+            <span class="hide">：</span>
+            <div class="right">同上，但是每次重复都镜像放置。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>gle.tex_clamp_to_edge</code></div>
+            <span class="hide">：</span>
+            <div class="right">重复纹理的边缘。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>gle.tex_clamp_to_border</code></div>
+            <span class="hide">：</span>
+            <div class="right">外围均为用户指定的颜色。</div>
+        </div>
+
+        如图所示。
+        <img src="1.4_wrap.png" alt="">
+
+        我们通过以下代码设置：
+        <code class="block">tx.wrap(GLenum mode_s,GLenum mode_t);</code>
+        两个参数分别是 S轴(X轴) 和 T轴(Y轴) 的环绕模式。<br>
+
+        通过以下全局函数指定 <code>gle.tex_clamp_to_border</code> 的颜色：
+<code class="block">tex_border_col(float r,float g,float b,float a);
+tex_border_rgb(unsigned int _rgb);
+tex_border_rgba(unsigned int _rgba);</code>
+        使用方法同清屏函数。
+
+        <h2>纹理过滤</h2>
+
+        假如我们有一张低分辨率纹理需要显示，应该怎样显示呢？
+        <div class="bar">
+            <div class="left"><code>gle.tex_fil_pixel</code></div>
+            <span class="hide">：</span>
+            <div class="right">像素化显示。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>gle.tex_fil_linear</code></div>
+            <span class="hide">：</span>
+            <div class="right">（放大模式默认值）平滑（线性）地显示。</div>
+        </div>
+
+        通过以下函数设置：
+        <code class="block">tx.fil(GLenum mode_min,GLenum mode_mag);</code>
+        其中，<code>mode_min</code> 代表纹理被缩小时的模式，<code>mode_mag</code> 代表纹理被放大时的模式。
+        <h3>多级渐远纹理</h3>
+        当纹理被缩小时，这样会产生很不真实的感觉，性能也不佳。因此，出现了 <span class="def">多级渐远纹理</span>。如图，这像是大纹理的好多缩小版本。
+        <img src="1.4_mipmaps.png" alt="" class="smallimg">
+        多级渐远纹理会在创建纹理时自动生成。<br>
+        它是在纹理被缩小时使用的，因此，你<span class="red">仅</span>可以为 <code>mode_min</code> 指定以下的值：<br>
+        <code>tex_fil_**</code>，星号处为两个字母。<br>
+        第一个字母：
+        <div class="bar">
+            <div class="linebar"><code>j</code></div>
+            <span class="hide">:</span>
+            <div class="right">选择较合适的版本。有时会产生不真实的生硬边界。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="linebar"><code>l</code></div>
+            <span class="hide">:</span>
+            <div class="right">为当前距离定制一个最合适的版本，不会有上述 j 的影响。</div>
+        </div>
+        第二个字母：<code>p(pixel)</code> 或 <code>l(linear)</code>，和上述的普通过滤模式一致。<br>
+        缩小模式默认值： <code>gle.tex_fil_ll</code>
+        <br><br>
+        <h3 class="inline">练习3. </h3> 在 <code>eg2</code> 基础上，改变纹理坐标和环绕，实现以下效果，
+        然后试试其他的环绕方式。 <span class="file">ex3</span>
+        <img src="1.4_ex3.png" alt="" style="width: calc(min(450px,100%));">
+
+        <h3 class="inline">练习4. </h3> 在 <code>eg2</code> 基础上，尝试在矩形上只显示纹理图像的中间一部分，修改纹理坐标，达到能看见单个像素的效果。尝试让像素显示得更清晰。<span class="file">ex4</span> <br>
+
+        <div class="ext">纹理的本质</div>
+        <div class="ex">
+            我们知道，片段着色器的输入会被进行插值，纹理坐标也一样。因此，我们调用 <code>texture()</code>  函数就是在纹理上找到对应像素的颜色。
+        </div>
+
+        <!-- ------------------------------------------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         --------------总-----------------------结------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         -----------------------------------------------------------
+         ----------------------------------------------------------- -->
+        <h1>总结</h1>
+        <h2>纹理</h2>
+        <div class="defbar">
+            <strong>纹理</strong> 是一张贴在三角形上的图片。
+        </div>
+        <code class="block">texture_t tx(const char* img_path, bool _use_alpha, int _unit = 0);</code>
+        <div class="bar">
+            <div class="left"><code>img_path</code></div>
+            <span class="hide">：</span>
+            <div class="right">图片的路径。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>_use_alpha</code></div>
+            <span class="hide">：</span>
+            <div class="right">忽略。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>_unit</code></div>
+            <span class="hide">：</span>
+            <div class="right">默认纹理单元，默认为0。</div>
+        </div>
+
+        <h3>成员</h3>
+        <div class="bar">
+            <div class="left"><code class="">tx.bind();</code></div>
+            <span class="hide">：</span>
+            <div class="right">绑定到默认纹理单元</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code class="">tx.bind(int unit);</code></div>
+            <span class="hide">：</span>
+            <div class="right">绑定到指定的纹理单元</div>
+        </div>
+
+        <div class="bar">
+            <div class="left">
+                <code>tx.wrap(GLenum mode_s,mode_t);</code>
+            </div>
+            <span class="hide">：</span>
+            <div class="right">
+                设置纹理环绕模式（超出范围时怎么办）<br>
+                模式包含：（都是 <code>gle.tex_</code> 开头）
+                <div class="bar">
+                    <div class="left"><code>repeat</code></div>
+                    <div class="right">（默认）重复纹理图像。</div>
+                </div>
+                <div class="bar">
+                    <div class="left"><code>mirrored_repeat</code></div>
+                    <div class="right">同上，但每次重复都镜像放置。</div>
+                </div>
+                <div class="bar">
+                    <div class="left"><code>clamp_to_edge</code></div>
+                    <div class="right">重复纹理的边缘。</div>
+                </div>
+                <div class="bar">
+                    <div class="left"><code>clamp_to_border</code></div>
+                    <div class="right">
+                        外围均为用户指定的颜色。 <br>
+                        通过以下函数指定：<br>
+<code class="block">tex_border_col(float r,g,b,a);
+tex_border_rgb(uint _rgb);
+tex_border_rgba(uint _rgba);</code>
+                        使用方法同清屏函数。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bar">
+            <div class="left"><code>tx.fil(GLenum mode_min,mode_mag);</code><br></div>
+            <span class="hide">：</span>
+            <div class="right">
+                设置纹理过滤方式（缩放时怎样显示）
+                <div class="bar">
+                    <div class="left"><code>gle.tex_fil_pixel</code></div>
+                    <div class="right">像素化显示。</div>
+                </div>
+                <div class="bar">
+                    <div class="left"><code>gle.tex_fil_linear</code></div>
+                    <div class="right">（放大模式默认值）平滑（线性）地显示。</div>
+                </div>
+                <code>mode_min</code>
+                还可以设定为：<code>gle.tex_fil_两个字母</code><br>
+                <strong>第一个字母：</strong> 
+                <div class="bar">
+                    <div class="linebar"><code>j</code></div>
+                    <span class="hide">:</span>
+                    <div class="right">选择较合适的版本。有时会产生不真实的生硬边界。</div>
+                </div>
+                
+                <div class="bar">
+                    <div class="linebar"><code>l</code></div>
+                    <span class="hide">:</span>
+                    <div class="right">为当前距离定制一个最合适的版本，不会有上述 j 的影响。</div>
+                </div>
+                <strong>
+                第二个字母：</strong><code>p(pixel)</code> 或 <code>l(linear)</code>，和上述的普通过滤模式一致。<br>
+                缩小模式默认值： <code>gle.tex_fil_ll</code>
+
+            </div>
+        </div>
+
+        <h2>着色器</h2>
+        <div class="bar">
+            <div class="left"><code>uniform sampler2D tex;</code></div>
+            <span class="hide">：</span>
+            <div class="right">纹理。赋值为纹理单元编号后即可用于获取对应单元的纹理。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>texture(tex, 纹理坐标)</code></div>
+            <span class="hide">：</span>
+            <div class="right">获取纹理上的颜色</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>mix(颜色1, 颜色2, 比例)</code></div>
+            <span class="hide">：</span>
+            <div class="right">混合两种颜色。最后一个参数代表第二种颜色的比例。</div>
+        </div>
+        <br>
+        <a href="1.5.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

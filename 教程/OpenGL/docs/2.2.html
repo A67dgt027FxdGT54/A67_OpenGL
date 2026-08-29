@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>2.2 光照贴图</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>2.2 光照贴图</h1>
+        通常来说，一个物体的材质属性不总是一致：物体的表面有不同的颜色，钢铁和木头的镜面光强度也不一样（当然，漫反射颜色也不同）。所以，我们的目标就是，找到一种方式，给物体表面的每一个点，分别指定一个漫反射颜色，和一个镜面光强度。<br>
+        不难发现，这和纹理很像。我们可以用一个纹理，贴在物体表面上，给表面上的每一个点指定一个属性。我们仅仅是不把 <code>texture()</code> 函数的返回值当成颜色，而是把它当成一个 vec3属性。<br>
+        指定漫反射颜色的贴图（纹理），叫<span class="def">漫反射贴图</span>；指定镜面光强度的贴图，叫做<span class="def">镜面光贴图</span>。<br>
+        <i>注：纹理=贴图</i>
+        <h2>漫反射贴图</h2>
+        由于漫反射也能表示物体原本的颜色，故可以直接使用物体的纹理。<br>
+        图片：<span class="file">res/container2.png</span>。<span class="red">这张图片有不透明度信息。加载时需将 _use_alpha 参数设为 1，否则图像解码会出错。</span>
+        <h2>镜面光贴图</h2>
+        因为镜面光的强度通常对红、绿、蓝都是一致的，所以我们一般使用一张灰度（黑白）图片：<span class="file">res/spec.png</span>。这张图片有不透明度信息。<br>
+        <h3 class="inline">例1. </h3>使用光照贴图。<br>
+        定义两个纹理：
+<code class="block">texture_t diff_tx("res/container2.png",1,0),
+          spec_tx("res/spec.png",1,1);</code>
+        初始化时绑定两个纹理：
+<code class="block">diff_tx.bind();
+spec_tx.bind();</code>
+        在片段着色器中定义纹理：<code class="block">uniform sampler2D diff_tex,spec_tex; </code>
+        在顶点着色器中转发纹理坐标：
+        <code class="block">layout (location = 2) in vec2 v_tex;</code>
+        <code class="block">out vec2 t_tex;</code>
+        <code class="block">t_tex=v_tex;</code>
+        在片段着色器中给 <code>mate.diff/spec</code> 赋值为纹理数据：
+        <code class="block">in vec2 t_tex;</code>
+        <code class="block">mate.diff=vec3(texture(diff_tex,t_tex));
+mate.spec=vec3(texture(spec_tex,t_tex)); //texture() 返回四分量（RGBA），用 vec3() 只取 RGB 作为颜色，丢弃透明度通道。</code>
+        替换材质设置，给纹理 uniform 赋值：
+        <code class="block">// set mate
+sd.seti("diff_tex",0);
+sd.seti("spec_tex",1);
+sd.setf("u_mate.shini", 32.0f);</code>
+        如果你成功了，你会发现箱子的铁框有反光，木板则没有。<span class="file">eg1</span>。<br>
+        为何我们通常不用彩色的spec贴图呢？你可以试着把spec贴图替换为<span class="file">res/col_spec.png</span>，就能发现效果不怎么真实。<br>
+        <br>
+        <a href="2.3.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

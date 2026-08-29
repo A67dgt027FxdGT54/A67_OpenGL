@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>2.1 光照</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>2.1 光照</h1>
+        光照也是游戏中一个重要的部分。<br>
+        我们知道，现实世界中有光影变化；我们的游戏里面也要有，才能显得真实。<br>
+        <h2>例1. 创建一个光照场景</h2> 
+        我们将以 <span class="file">1.6课 eg2</span> 为基础来改编。<br>
+        首先，我们需要一个物体和一个光源。接下来我们将会频繁修改 mesh_buf_t 和 shader_t ，为了不影响光源，我们定义专属于光源的这些对象：(文件名后面加个l表示为光源使用)
+        <code class="block">mesh_buf_t mb("res/cube.ve","res/cube.in",gle.draw_never_chg),
+           lt_mb("res/cube.ve","res/cube.in",gle.draw_never_chg);
+shader_t lt_sd("res/eg1l.vs","res/eg1l.fs"),
+         sd("res/eg1.vs","res/eg1.fs");</code>
+        由于我们暂时不用纹理了，我们删掉纹理相关内容，同时使用以下的极简的着色器：<br>
+        两个顶点着色器 <code>eg1.vs</code> <code>eg1l.vs</code> 均为：
+        <code class="block">#version 330 core
+layout (location = 0) in vec3 v_pos;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
+void main(){
+    gl_Position=proj*view*model*vec4(v_pos.x,v_pos.y,v_pos.z,1.0);
+}</code>
+        物体片段着色器 <code>eg1.fs</code>
+        <code class="block">#version 330 core
+out vec4 fcol;
+void main(){
+    fcol=vec4(1.0,0.5,0.31,1.0); // orange 
+}</code>
+        光源片段着色器 <code>eg1l.fs</code>
+        <code class="block">#version 330 core
+out vec4 fcol;
+void main(){
+    fcol=vec4(1.0); // white 
+}</code>
+        之后加上鼠标、键盘控制:<br>
+        <code class="block">gl.mouse();</code>
+        <code class="block">mousectrl_t g_mouse;</code>
+        <code class="block">if(gl.kpr('W')) cam.movef(tim.dis);
+if(gl.kpr('A')) cam.mover(-tim.dis);
+if(gl.kpr('S')) cam.movef(-tim.dis);
+if(gl.kpr('D')) cam.mover(tim.dis);
+if(gl.kpr(' ')) cam.moveu(tim.dis); // press space to fly higher
+if(gl.kpr(GLFW_KEY_LEFT_SHIFT)) cam.moveu(-tim.dis); // press shift to fly lower</code>
+        定义光源位置。<code class="block">vec3 lt_pos(1.2f,1.0f,2.0f);</code>
+        每帧绑定物体的网格缓冲、着色器，更新uniform，渲染，然后同样绑定另一个：
+<code class="block">// bind object
+mb.bind();
+sd.use();
+
+// draw object
+sd.setm4("model",mat4(1.0f)); // not any trans
+sd.setm4("view",cam.view());
+sd.setm4("proj",proj);
+gl.triangle(0,12);
+
+// bind light
+lt_mb.bind();
+lt_sd.use();
+
+// draw light
+trans_t tr;
+tr.trans(lt_pos); // move to the position
+tr.scale(0.2f); // scale to be smaller
+lt_sd.setm4("model",tr.matr());
+lt_sd.setm4("view",cam.view());
+lt_sd.setm4("proj",proj);
+gl.triangle(0,12);</code>
+        <span class="file">eg1</span>。
+        
+        <h2>光照介绍</h2>
+        我们使用的是风氏光照算法。光照最终效果可以分解为三种效果的组合：
+        <img src="2.1_ads.png" alt="">
+        1. 环境光。在真实世界里，光线可以反射，甚至可以来回反射。完全模拟这个过程连最好的显卡也做不到。为了节省性能，我们使用一个环境光，来代表 这些多次反射的光线 照亮的一点点亮度。<br>
+        2. 漫反射。光照在物体上，物体就会显示出它的颜色，这就是漫反射。<br>
+        3. 镜面反射。光滑的物体，会映出光源的颜色，这就是镜面反射。<br>
+        4. 将这些颜色混合，即为最终效果。<br>
+        <h3>材质</h3>
+        物体有颜色，镜面光的样式也不一致。描述这些属性的对象就是<span class="def">材质</span>。<br>
+        我们在着色器中导入光照头文件：<code class="block">#include&lt;phong.fsh&gt;</code>
+        然后声明一个材质对象：<code class="block">material_t mate;</code>
+        它的成员有：<br>
+        <h4 class="inline">1. </h4><code class="bold">vec3 mate.diff</code>：
+        物体本身的颜色即漫反射光的颜色，也是漫反射的强度（在红绿蓝三个通道上的）。<br>
+        <h4 class="inline">2. </h4><code class="bold">vec3 mate.spec</code>：
+        物体高光的强度，也是高光的颜色。<br>
+        <h4 class="inline">3. </h4><code class="bold">float mate.shini</code>：
+        物体的反光度。（高光的范围，如图）
+        <img src="2.1_shini.png" alt="" class="smallimg">
+        下图展示了各种材质的效果：
+        <img src="2.1_mate.png" alt="" class="">
+        <span style="font-size: 80%;color: lightgray;">img from 
+        <a href="http://devernay.free.fr/cours/opengl/materials.html" style="color: lightgray;">here</a> / LearnOpenGL</span><br>
+
+        <h3>光源</h3>
+        声明一个光源对象：（在着色器和C++中）<code class="block">light_t lt;</code>
+
+        光源有4种类型，由它的成员 <code>lt.type</code> 决定。
+        <div class="bar">
+            <div class="left"><strong>值</strong></div>
+            <span class="hide">：</span>
+            <div class="right"><strong>描述</strong></div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">-1</div>
+            <span class="hide">：</span>
+            <div class="right">无效。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">0</div>
+            <span class="hide">：</span>
+            <div class="right">定向光（平行光，如太阳光）</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">1</div>
+            <span class="hide">：</span>
+            <div class="right">点光源（如灯泡）</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">2</div>
+            <span class="hide">：</span>
+            <div class="right">聚光（如手电筒）<img src="2.1_spotlight.png" alt=""></div>
+        </div>
+
+        首先介绍点光源（1）。
+
+        <div class="bar">
+            <div class="left"><code>lt.dir</code></div>
+            <span class="hide">：</span>
+            <div class="right">在片段着色器中赋值，由光源指向片段的方向，<br>
+            即 <code>片段坐标-光源坐标</code> 。<span class="red">不要归一化。它的模长在计算衰减（离得远了就会变暗）时有用。</span></div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>lt.amb</code></div>
+            <span class="hide">：</span>
+            <div class="right">环境光的强度，也是颜色。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>lt.diff</code></div>
+            <span class="hide">：</span>
+            <div class="right">漫反射光的强度，也是颜色。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>lt.spec</code></div>
+            <span class="hide">：</span>
+            <div class="right">镜面光的颜色，也是强度。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>lt.kc/kl/kq</code></div>
+            <span class="hide">：</span>
+            <div class="right">衰减系数。</div>
+        </div>
+        <div class="tipst">衰减系数</div>
+        <div class="tips">
+            由你想让光线传播直到完全衰减的距离(见图中黄色箭头)决定。
+            <img src="2.1_att.png" alt="">
+            <div class="bar">
+                <div class="left" style="width: 50%;">
+                    <div class="bar">
+                        <div class="left"><strong>距离</strong></div>
+                        <span class="hide">：</span>
+                        <div class="right"><code><strong>kc kl kq</strong></code></div>
+                    </div>
+                    <div class="bar">
+                        <div class="left">7</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.7 1.8</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">13</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.35 0.44</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">20</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.22 0.20</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">32</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.14 0.07</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">50</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.09 0.032</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">65</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.07 0.017</div>
+                    </div>
+                </div>
+                <div class="right">
+                    <div class="bar">
+                        <div class="left"><strong>距离</strong></div>
+                        <span class="hide">：</span>
+                        <div class="right"><code><strong>kc kl kq</strong></code></div>
+                    </div>
+                    <div class="bar">
+                        <div class="left">100</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.045 0.0075</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">160</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.027 0.0028</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">200</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.022 0.0019</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">325</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.014 0.0007</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">600</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.007 0.0002</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">3250</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.0014 0.000007</div>
+                    </div>
+                </div>
+            </div>
+            <a href="http://www.ogre3d.org/tikiwiki/tiki-index.php?page=-Point+Light+Attenuation" class="copyright">Data From Here.</a>
+        </div>
+
+        <h3>光照函数</h3>
+
+        <code class="block">vec4 lighting(法向量,视线（相机位置-片段位置）,mate,lt);</code>
+
+        如果你不理解这些，不要着急。我将会在下面的例题中给出用法。
+        <br><h4 class="inline">例2. </h4> 给例1的场景加上光照效果。<br>
+        <h4>1. 材质</h4>
+        我们首先在着色器中创建一个材质：
+        <code class="block">material_t mate;</code>
+        然后思考一下怎样给它传数据。我们当然可以用 uniform，但是，我们常常需要在着色器中修改其属性，但 uniform 不能直接修改。因此，我们额外创建一个 uniform，赋值给原材质，就能修改那个作为普通变量的原材质了：<code class="block">uniform material_t u_mate;</code>
+        <code class="block">mate=u_mate;
+// 可以修改mate</code>
+        下一个问题，怎么传结构体 uniform ？有两种方法：
+        <code class="block">sd.set*("结构体.成员",***);
+sd.set*(sdu("结构体","成员"),***);</code>
+        于是我们传入：
+        <code class="block">sd.set3f("u_mate.diff",vec3(1.0f,0.5f,0.31f));//        orange 
+sd.set3f("u_mate.spec",vec3(1.0f,1.0f,1.0f)); // bright white 
+sd.setf("u_mate.shini", 32.0f);</code>
+        <h4>2. 光源</h4>
+        同样，我们创建一个光源：<code class="block">light_t lt;</code><code class="block">uniform light_t u_lt;</code><code class="block">lt=u_lt;</code>
+        接下来就是把它传到着色器里了。不同的是，在C++侧也有一个相同的 light_t，我们创建一个：
+        <code class="block">light_t lt;
+lt.type=1;
+lt.amb=vec3(0.2f,0.2f,0.2f); // dark   white / gray
+lt.diff=vec3(0.5f,0.5f,0.5f);// mid    white / gray
+lt.spec=vec3(1.0f,1.0f,1.0f);// bright white
+lt.kc=1.0f;
+lt.kl=0.09f;
+lt.kq=0.032f;</code>
+        然后传数据：<code class="block">sd.setlight("u_lt",lt);</code>
+        别忘了，<code>lt.dir</code> 还要自己算：（在片段着色器中）
+        <code class="block">lt.dir=片段位置-光源位置;</code>
+        那么我们接下来的任务就是获取这两个位置了。<br>
+        <h4>1. 片段位置。</h4>目前的所有位置都是在世界空间中的。我们可以在顶点着色器中，算出顶点在世界空间中的位置，插值后即为片段位置：<br>
+        顶点着色器：
+        <code class="block">out vec3 f_pos;</code>
+        <code class="block">f_pos=vec3(model*vec4(v_pos.xyz,1.0));</code>
+        片段着色器：<code class="block">in vec3 f_pos;</code>
+        <h4>2. 光源位置。</h4>直接传 uniform 就行。
+        <code class="block">uniform vec3 lt_pos;</code>
+        <code class="block">sd.set3f("lt_pos",lt_pos);</code>
+        因此
+        <code class="block">lt.dir=f_pos-lt_pos;</code>
+        <h4>3. 法向量</h4>
+        法向量是光线反射的轴，通常垂直于它所在的平面。它通常在顶点数据中定义。因此，我们需要替换 <code>mb</code>的顶点数据：<span class="file">res/cube_normal.ve</span>。
+        （数据布局：3顶点坐标，3法向量，2纹理坐标）<br>
+        然后经顶点着色器转发：<code class="block">layout (location = 1) in vec3 v_norm;</code>
+        <code class="block">out vec3 t_norm;</code>
+        对法向量的变换，常常使用另一个矩阵：<span class="def">法线矩阵</span>。在这里没有任何变化，故传入单位矩阵：
+        <code class="block">uniform mat3 m_norm;</code>
+        <code class="block">sd.setm3("m_norm",mat3(1.0f));</code>
+        <code class="block">t_norm=m_norm*v_norm;</code>
+        最后在片段着色器中接收：
+        <code class="block">in vec3 t_norm;</code>
+        <h4>4. 相机位置</h4>
+        直接传。<code class="block">uniform vec3 cam_pos;</code><code class="block">sd.set3f("cam_pos",cam.pos);</code>
+        <h4>最终调用</h4> 
+        <code class="block">fcol=lighting(t_norm,cam_pos-f_pos,mate,lt);</code>
+        <del>终于好了</del><span class="file">eg2</span>。<br>
+        
+        <h3 class="inline">练习1. </h3>使用sin或cos函数让光源在场景中来回移动。<br>
+        提示：借助计时器。如果你不擅长数学，可以使用以下公式：
+        <code class="block">x=radius*cos(time),z=radius*sin(time)</code>
+        <a href="2.1_ex1_ans.html">答案</a><br>
+
+        <h3 class="inline">练习2. </h3>使用以下公式，改变光源颜色。<br>
+<code class="block">red=sin(2*time)
+green=sin(0.7*time)
+blue=sin(1.3*time)</code>
+        <a href="2.1_ex2_ans.html">答案</a><br>
+        
+        <h3 class="inline">练习3. </h3>在练习2的基础上，同时改变光源立方体的颜色。<br>
+        
+        <h1>总结</h1>
+        <h4>结构体：material_t（材质）</h4>    
+        <div class="bar">
+            <div class="left"><code>vec3 diff</code></div>
+            <div class="right">漫反射颜色（物体本身颜色），也是强度。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec3 spec</code></div>
+            <div class="right">镜面反射强度（RGB），也是颜色。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>float shini</code></div>
+            <div class="right">高光反光度（值越大高光越集中，推荐 8~128）。</div>
+        </div>
+
+        <h4>结构体：light_t（光源）</h4>
+        <div class="bar">
+            <div class="left"><code>int type</code></div>
+            <div class="right">光源类型：<code>0</code> 方向光，<code>1</code> 点光源，<code>2</code> 聚光灯，<code>-1</code> 无效。</div>
+        </div>
+        <span class="red mid">以下仅列举点光源属性。</span>
+        <div class="bar">
+            <div class="left"><code>vec3 dir</code></div>
+            <div class="right">光源指向片段的向量（不应归一化）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec3 amb</code></div>
+            <div class="right">环境光强度（RGB），也是颜色。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec3 diff</code></div>
+            <div class="right">漫反射强度（RGB），也是颜色。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>vec3 spec</code></div>
+            <div class="right">镜面反射颜色（高光颜色），也是强度。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>float kc / kl / kq</code></div>
+            <div class="right">衰减系数。</div>
+        </div>
+        <div class="tipst">衰减系数</div>
+        <div class="tips">
+            由你想让光线传播直到完全衰减的距离决定。
+            <div class="bar">
+                <div class="left" style="width: 50%;">
+                    <div class="bar">
+                        <div class="left"><strong>距离</strong></div>
+                        <span class="hide">：</span>
+                        <div class="right"><code><strong>kc kl kq</strong></code></div>
+                    </div>
+                    <div class="bar">
+                        <div class="left">7</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.7 1.8</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">13</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.35 0.44</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">20</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.22 0.20</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">32</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.14 0.07</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">50</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.09 0.032</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">65</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.07 0.017</div>
+                    </div>
+                </div>
+                <div class="right">
+                    <div class="bar">
+                        <div class="left"><strong>距离</strong></div>
+                        <span class="hide">：</span>
+                        <div class="right"><code><strong>kc kl kq</strong></code></div>
+                    </div>
+                    <div class="bar">
+                        <div class="left">100</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.045 0.0075</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">160</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.027 0.0028</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">200</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.022 0.0019</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">325</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.014 0.0007</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">600</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.007 0.0002</div>
+                    </div>
+                    
+                    <div class="bar">
+                        <div class="left">3250</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.0014 0.000007</div>
+                    </div>
+                    <div class="bar">
+                        <div class="left">不衰减</div>
+                        <span class="hide">：</span>
+                        <div class="right">1.0 0.0 0.0</div>
+                    </div>
+                </div>
+            </div>
+            <a href="http://www.ogre3d.org/tikiwiki/tiki-index.php?page=-Point+Light+Attenuation" class="copyright">Data From Here.</a>
+        </div>
+
+        <h4>函数：lighting（光照计算）</h4>
+        <div class="bar">
+            <div class="left">函数调用</div>
+            <div class="right"><code>vec4 lighting(vec3 norm, vec3 v_dir, material_t materi, light_t lt);</code></div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>norm</code></div>
+            <div class="right">法线（需预先归一化）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>v_dir</code></div>
+            <div class="right">视线方向，从片段指向摄像机（即摄像机坐标 - 片段坐标）。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>materi</code></div>
+            <div class="right">材质。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>lt</code></div>
+            <div class="right">光源。</div>
+        </div>
+        <div class="bar">
+            <div class="left">返回值</div>
+            <div class="right">最终光照颜色（<code>vec4</code>，alpha 固定为 <code>1.0</code>）。</div>
+        </div>
+
+        <br>
+        <a href="2.2.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

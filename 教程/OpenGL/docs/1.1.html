@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>1.1 创建窗口+初始化</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>1.1 创建窗口+初始化</h1>
+        <p class="red">
+            观前提示：从这课开始，最后都会有总结。如果你不理解某些内容，可以看一下总结。
+        </p>
+        <h2>初始化</h2>
+        为了方便调用，我们将一些很常用的函数封装到了一个类 <code>gl_t</code> 中。<br>
+        这让你只需要调用很简单的函数就能完成任务！<br>
+        我们可以通过以下代码进行其声明和初始化。<br>
+        <div class="warnt">警告</div>
+        <div class="warn">只能声明一个这种对象且这要放在所有其他对象的前面。</div>
+        <code class="block">gl_t gl(bool _use_v3_3,int _ww,int _wh,const char* _wtitle);</code>
+        <div class="bar">
+            <div class="left">第一个参数：<code>_use_v3_3</code></div>
+            <span class="hide">：</span>
+            <div class="right">为1时要求使用 OpenGL 3.3 核心模式，可能不兼容老旧显卡；为0时使用默认配置。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">第二、三、四个参数：<code>_ww</code>, <code>_wh</code>, <code>_wtitle</code></div>
+            <span class="hide">：</span>
+            <div class="right">窗口的宽、高、标题（注意编码）。</div>
+        </div>
+
+        <h2>视口设置</h2>
+        我们应该定义OpenGL渲染窗口（<span class="def">视口</span>）的尺寸大小和位置。
+        <div class="tipst">回调函数</div>
+        <div class="tips">
+            在OpenGL中，使用<span class="def">回调函数</span>的形式进行各种控制。这种函数会在执行对应操作时被自动调用。<br> 例如，当我们改变窗口大小时，就会调用 <code>framebuffer_size_callback</code>。这使得我们可以同步改变视口大小。<br>
+            这可以在主文件中定义，也可以在另一个文件中定义。但是函数名要相同。在本教程中，将在 header 路径下的 sto.h 中定义。<span class="file">sto.h</span> 为代码模板。<br>
+            <p class="red">注意，在实际制作项目时，通常采用类似 <span class="file">mod.cpp</span> 的结构。<code>input()</code> 函数用于检测输入。</p>
+        </div>
+
+        我们应当在以下回调函数中设置视口。
+        <code class="block">framebuffer_size_callback(GLFWwindow* _win, int _w, int _h)</code> 
+        每当刚开始时或者窗口大小改变时，该函数会被调用。这时 <code>_w</code> 为调整后的宽， <code>_h</code> 为调整后的高。<br><br>
+        我们可以在这个函数中调用以下函数来设置视口：
+        <code class="block">glViewport(lbX, lbY, vpW, vpH);</code>
+        其中，<code>lbX,lbY</code> 为视口左下角的位置，<code>vpW,vpH</code>为视口的宽度和高度（单位：像素）。<br><br>
+        此外，还要调用以下函数来设置窗口大小：
+        <code class="block">gl.set_win(_w,_h);</code> 
+        其中，<code>gl</code> 是你定义的 <code>gl_t</code> 实例。这行代码不要修改。
+        
+        <div class="tipst">图解</div>
+        <div class="tips">
+            <img src="1.1_viewport.png" alt="">
+            图中视口即白色长方形，渲染出的图形都会在其中显示，外围可以用于显示额外内容。<br>
+            视口左下角的坐标即红色所示，在这里原点为窗口左下角。
+            <div class="caut">注意</div>
+            <div class="cau">2D坐标横轴为x，纵轴为y。</div>
+            <div class="caut">区分</div>
+            <div class="cau">
+                注意区分窗口与视口的区别：如图所示，这一整张图是窗口，白色的长方形是视口。
+            </div>
+        </div>
+
+        <h3 class="inline">例1. </h3> 创建一个与窗口一样大的视口。<br>
+<code class="block">void framebuffer_size_callback(GLFWwindow* _win, int _w, int _h){
+    glViewport(0,0,_w,_h); // 视口左下角正好位于窗口左下角，视口与窗口大小相同
+    gl.set_win(_w,_h); // 一定要加上这句
+}</code>
+        这段代码会很常用，之后的所有代码，用的都是这一段。<br>
+
+        <h3 class="inline">练习1. </h3> 创建一个位于窗口中间、宽高为窗口一半的视口。（只写回调函数）
+        答案 <span class="file">ex1</span><br>
+
+        <h2>渲染循环</h2>
+        我们不希望程序在渲染完一个图形之后立即退出，所以就要把渲染代码放在一个循环里。<br>
+        但为了简化，你可以调用以下函数：
+        <code class="block">gl.main_loop();</code>
+        然后定义一个 <code>show()</code> 函数，并在函数内实现以下内容：<br>
+        <ol>
+            <li>输入控制；</li>
+            <li>清屏指令；</li>
+            <li>渲染指令；</li>
+        </ol>
+        内置的循环会每帧调用一次这个函数。
+
+        <h2>开始之前</h2>
+        在开始介绍三种内容之前，我们先试着写一个可以运行并显示一个空窗口的代码。<br>
+        <h3 class="inline">练习2. </h3> 如上，创建一个标题为 <code>Learn OpenGL</code> ，宽 800px，高 600px 的空窗口。<br>
+        如果你不会，请不要担心，把这些东西组合起来确实比较困难。正确答案 <span class="file">ex2</span> 。无论是本次的代码，还是之后的，都要复制到你的对应目录下运行。
+
+        <h2>输入控制</h2>
+        在此处先介绍键盘控制。<br>
+        我们可以通过调用以下函数来获取按键状态。
+        <code class="block">gl.kpr(/*按键常量*/);</code>
+        其中，按键常量是以下常量表中的一个。
+
+        <a href="GLenum_Key_Constant_List.html"><span class="btn">常量表</span></a>
+
+        当 按键常量对应的按键 在调用时被按下，这个函数返回 1 ，否则返回 0 。
+        这时我们可以调用以下函数来关闭窗口： <code class="block">gl.close_win();</code>
+
+        <h2>清屏指令</h2>
+        为了不保留上一帧的画面，我们在每次渲染前要清屏。调用以下函数(任一均可)：
+<code class="block">gl.clr_col(float _r,float _g,float _b,float _a);
+gl.clr_rgb(unsigned int _rgb);
+gl.clr_rgba(unsigned int _rgba);
+</code>
+        其中，第一个函数接受4个小数（0~1之间），分别为 红色值、绿色值、蓝色值、不透明度。<br>
+        第二个接受一个十六进制色号（不包含不透明度信息），如 <code>0xff00ff</code>。<br>
+        第三个接受一个十六进制色号（包含不透明度信息），如 <code>0xff00ffff</code>。 <br>
+
+        <h3 class="inline">例2. </h3>在练习2的基础上，
+        窗口填充黄色（<code>0xffff00</code>）当 <span class="key"><br>Esc</span> 被按下时，关闭窗口。答案 <span class="file">eg2.cpp</span>。
+
+        <div class="caut">常见问题</div>
+        <div class="cau">
+            <div class="bar">
+                <div class="left">编译时报错找不到 <code>OpenGL.h</code></div>
+                <span class="hide">：</span>
+                <div class="right">检查你的代码是否放入了正确的位置。</div>
+            </div>
+            
+            <div class="bar">
+                <div class="left">窗口弹出后立即关闭</div>
+                <span class="hide">：</span>
+                <div class="right">确认你调用了 <code>gl.main_loop();</code>，并且 <code>show()</code> 函数内没有导致退出的代码。</div>
+            </div>
+            
+            <div class="bar">
+                <div class="left">窗口是黑色的，没有图形</div>
+                <span class="hide">：</span>
+                <div class="right">检查着色器文件路径是否正确，或者先调用 <code>gl.clr_rgb(0xff0000)</code> 测试清屏颜色是否生效。</div>
+            </div>
+        </div>
+
+        <h1>总结</h1>
+        <h2 class="">gl_t 对象</h2>
+        <span class="red">只能声明一个这种对象且这要放在所有其他对象的前面。</span>
+        <div class="bar">
+            <div class="left">构造函数/声明</div>
+            <span class="hide">：</span>
+            <div class="right">
+                <code class="block">gl_t gl(bool _use_v3_3,int _ww,int _wh,const char* _wtitle);</code>
+            </div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">设置窗口大小</div>
+            <span class="hide">：</span>
+            <div class="right">
+                只能在 <code>framebuffer_size_callback</code> 回调函数中以固定的参数调用一次：
+                <code class="block">gl.set_win(_w,_h);</code>
+            </div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">调用主循环</div>
+            <span class="hide">：</span>
+            <div class="right">
+                <code class="block">gl.main_loop();</code>
+                之后自行定义函数 <code>show()</code>，放入渲染代码，每帧自动调用。
+                <br>渲染代码包含：<br>
+                1. 输入控制；<br>
+                2. 清屏指令；<br>
+                3. 渲染指令；
+            </div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">获取按键状态(是否按下)</div>
+            <span class="hide">：</span>
+            <div class="right">
+                <code>bool gl.kpr(/*按键常量*/)</code>
+                <a href="GLenum_Key_Constant_List.html"><span class="btn">常量表</span></a>
+            </div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">关闭窗口</div>
+            <span class="hide">：</span>
+            <div class="right">
+                <code class="block">gl.close_win();</code>
+            </div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">清屏</div>
+            <span class="hide">：</span>
+            <div class="right">
+                <code class="block">gl.clr_col(float _r,float _g,float _b,float _a);
+gl.clr_rgb(unsigned int _rgb);
+gl.clr_rgba(unsigned int _rgba);</code>
+            </div>
+        </div>
+        <h2 class="">sto.h/回调函数</h2>
+        <div class="defbar"><span class="def">回调函数</span>是一种作出对应操作后就会被自动调用的函数。</div>
+        窗口大小被调整时调用：
+        <code class="block">framebuffer_size_callback(GLFWwindow* _win, int _w, int _h)</code>
+        模版 <span class="file">sto.h</span> ；常用 <span class="file">ex2/header/sto.h</span>。
+        <h2 class="">OpenGL 原生函数</h2>
+        <h3>设置视口</h3>
+        <code class="block">glViewport(lbX, lbY, vpW, vpH);</code>
+
+        
+        
+        
+        <br>
+        <a href="1.2.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>1.2 三角形</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>1.2 三角形</h1>
+        <p class="red">
+            观前提示：日志功能用于记录报错信息，如果程序崩溃，看看日志。<br>
+            如果不理解 layout，可以先跳过，在 1.3.1 节中有例子，可以让你更加理解。
+        </p>
+        在渲染物体时，为了方便，会将物体表面拆分成一个个三角形，分别进行渲染。<br>
+        本节的内容，就是渲染一个三角形的流程。<br>
+        <h3 class="inline">例1. </h3>绘制一个居中的红色三角形。
+        <h2>图形渲染管线</h2>
+        “管线”（Pipeline）其实是“流水线”的意思。因此，图形渲染管线就是一个“流水线”。<br>
+        不管怎样，这就是把3D坐标转为（屏幕上的）2D坐标，然后把2D坐标转为屏幕上的像素。<br>
+        这分为多个步骤，这些步骤需要写一个个小程序来实现，这些小程序叫 <span class="def">着色器</span>。<br>
+        请掌握下框中顶点着色器和片段着色器的内容。
+        <div class="tipst">图形渲染管线</div>
+        <div class="tips">
+            如图所示。
+            <img src="1.2_pipeline.png" alt="">
+            我们可以自定义蓝色框的三种着色器。其中顶点着色器和片段着色器是必需的。几何着色器是可选的，本教程暂不涉及。
+            <div class="bar">
+                <div class="left"><strong>1. 顶点着色器</strong></div>
+                <span class="hide">：</span>
+                <div class="right">
+                    就是用来把顶点在空间里的坐标转换为在玩家眼前的坐标，之后由机器自动转换为屏幕上的坐标。（后面会讲）
+                    <div class="caut">注意</div>
+                    <div class="cau">
+                        经过此步骤之后，所有的顶点坐标，在三个轴上均应在 -1.0 ~ 1.0 的范围内。否则会被丢弃。符合此要求的坐标又叫做 <span class="def">标准化设备坐标（NDC）</span>。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bar">
+                <div class="left"><strong>2. 几何着色器</strong></div>
+                <span class="hide">：</span>
+                <div class="right">
+                    可以生成额外的顶点和<span class="def">图元</span>（图形）。<br>在本例中，它生成了第四个顶点、新增了图元。
+                </div>
+            </div>
+            
+            <div class="bar">
+                <div class="left"><strong>3. 图元装配</strong></div>
+                <span class="hide">：</span>
+                <div class="right">
+                    传入以上的所有顶点，连接成图元。
+                </div>
+            </div>
+            
+            <div class="bar">
+                <div class="left"><strong>4. 光栅化</strong></div>
+                <span class="hide">：</span>
+                <div class="right">
+                    把图元转换为像素。
+                </div>
+            </div>
+            
+            <div class="bar">
+                <div class="left"><strong>5. 片段着色器</strong></div>
+                <span class="hide">：</span>
+                <div class="right">
+                    计算一个像素的最终颜色。片段相当于像素。
+                </div>
+            </div>
+            
+            <div class="bar">
+                <div class="left"><strong>6. 测试与混合</strong></div>
+                <span class="hide">：</span>
+                <div class="right">
+                    测试，决定是否要丢弃（不渲染）这个片段。<br>
+                    混合，通过不透明度值来混合多个片段的颜色。
+                </div>
+            </div>
+        </div>
+        <div class="tipst"></div>
+        <div class="tips">
+            顶点着色器负责把每个点的坐标算好，片段着色器负责给每个像素涂上正确的颜色。你只需要写好代码，它们就会自动执行。
+        </div>
+        <h2>顶点数据——网格缓冲</h2>
+        用于存储顶点数据和索引数据。
+        <div class="warnt">警告</div>
+        <div class="warn">有些数据是从0开始编号的。</div>
+        <div class="tipst">顶点数据</div>
+        <div class="tips">
+            <img class="bigimg" src="1.2_ve.png" alt="">
+            如图所示，一组顶点数据可以含有多个顶点，一个顶点可以含有多个<span class="def">顶点属性</span>，一个顶点属性可以含有多个<span class="def">分量</span>。<br>
+            我们可以通过以下代码声明一个顶点数据对象：
+            <code class="block">ve_t ve;</code>
+            它的成员有：<br>
+            <div class="bar">
+                <div class="left"><code>int mloc</code></div>
+                <span class="hide">：</span>
+                <div class="right">顶点的属性数。</div>
+            </div>
+            
+            <div class="bar">
+                <div class="left"><code>vector&lt;int&gt; siz</code></div>
+                <span class="hide">：</span>
+                <div class="right">每个属性的分量数。</div>
+            </div>
+            
+            <div class="bar">
+                <div class="left"><code>vector&lt;float&gt; data</code></div>
+                <span class="hide">：</span>
+                <div class="right">存储了数据的具体内容，存储顺序如图所示。</div>
+            </div>
+            
+            <div class="bar">
+                <div class="left"><code>clr()</code></div>
+                <span class="hide">：</span>
+                <div class="right">若你不需要这里面的数据了，调用此函数清空数据，释放内存。</div>
+            </div>
+        </div>
+        <div class="tipst">索引数据</div>
+        <div class="tips">
+            <img class="smallimg" src="1.2_in.png" alt="">
+            每条索引指定以哪三个顶点绘制三角形。<br>
+            可以通过以下代码声明一个索引数据对象：
+            <code class="block">in_t in;</code>
+            它的成员有：<br>
+            <div class="bar">
+                <div class="left"><code>vector&lt;unsigned int&gt; data</code></div>
+                <span class="hide">：</span>
+                <div class="right">存储顶点编号。</div>
+            </div>
+            
+            <div class="bar">
+                <div class="left"><code>clr()</code></div>
+                <span class="hide">：</span>
+                <div class="right">若你不需要这里面的数据了，调用此函数清空数据，释放内存。</div>
+            </div>
+            例如，data={0,1,2}，就是把顶点0号、1号、2号连接成一个三角形。
+            <div class="caut">顶点顺序</div>
+            <div class="cau">
+                从三角形正面看，最好为逆时针。这会在之后的优化过程中起作用。
+            </div>
+        </div>
+        <h3>创建一个网格缓冲</h3> 
+        可以通过以下代码之一：
+<code class="block">mesh_buf_t mb(const char* ve_path,const char* in_path,GLenum _upload_mode);
+mesh_buf_t mb(ve_t& ave,in_t& ain,GLenum _upload_mode,bool use_typ);
+</code>
+        其中，第一种用于从文件读取数据，第一、二个参数为顶点数据文件、索引数据文件的路径。<br>
+        第二种直接传入对象。第一、二个参数为顶点数据、索引数据。<br>
+        第三个参数代表数据改变频率，为以下三个值之一：
+<code class="block">gle.draw_never_chg
+gle.draw_often_chg
+gle.draw_always_chg 
+</code>
+        <div class="tipst"></div>
+        <div class="tips">
+            <code>gle</code> 是库里预先定义好的一个对象，里面存放了常用的 OpenGL 选项，比如 <code>gle.draw_never_chg</code> 表示“数据几乎不变”，<code>gle.draw_often_chg</code> 表示“数据经常改变”。你直接照抄示例里的写法即可，暂时不需要深究。
+        </div>
+        第四个参数在当前版本忽略,随便填1或0，目前没有作用。<br>
+        例如：
+        <code class="block">mesh_buf_t mb("res/eg1.ve","res/eg1.in",gle.draw_always_chg);</code>
+        <div class="tipst">文件格式</div>
+        <div class="tips">
+            <h4>1. 顶点数据</h4>
+            扩展名 <code>*.ve</code>
+            <div class="bar">
+                <div class="linebar">1</div>
+                <span class="hide">:</span>
+                <div class="right">一个整数 <code>mloc</code>。</div>
+            </div>
+            
+            <div class="bar">
+                <div class="linebar">2</div>
+                <span class="hide">:</span>
+                <div class="right"><code>mloc</code> 个整数，每个属性的分量数。</div>
+            </div>
+            
+            <div class="bar">
+                <div class="linebar">3</div>
+                <span class="hide">:</span>
+                <div class="right">各顶点的数据。</div>
+            </div>
+            
+            <div class="bar">
+                <div class="linebar">...</div>
+                <span class="hide">:</span>
+                <div class="right">每行一个顶点，依次列出所有属性分量。</div>
+            </div>
+            例如：(一个居中的三角形)
+<code class="block">1
+3
+-0.5 -0.5 0
+0.5 -0.5 0
+0 0.5 0
+</code>
+            <h4>2. 索引数据</h4>
+            扩展名 <code>*.in</code>
+            <div class="bar">
+                <div class="linebar">1</div>
+                <span class="hide">:</span>
+                <div class="right">索引数据。</div>
+            </div>
+            
+            <div class="bar">
+                <div class="linebar">...</div>
+                <span class="hide">:</span>
+                <div class="right">（按 <code>data[]</code> 顺序）</div>
+            </div>
+            例如：<code class="block">0 1 2</code>
+        </div>
+        <h3>使用一个网格缓冲</h3>
+        声明之后，就会自动上传。渲染需要使用哪个缓冲的数据，就绑定哪个缓冲：
+        <code class="block">mb.bind();</code>
+        若你不需要之，调用此函数清空数据，释放内存。
+        <code class="block">mb.clr();</code>
+        <h2>创建、使用着色器</h2>
+        可以通过以下代码创建：
+        <code class="block">shader_t sd(const char* vs_path,conat char* fs_path);</code>
+        其中两个参数分别为顶点着色器和片段着色器代码的路径。<br>
+        例如：<code class="block">shader_t sd("res/eg1.vs","res/eg1.fs");</code>
+        可以调用以下函数使用：
+        <code class="block">sd.use();</code>
+        <div class="warnt">警告</div>
+        <div class="warn">
+            创建之后不会自动使用，要手动调用这个函数。
+        </div>
+        调用之后就可以渲染物体了。
+        <h2>着色器代码（GLSL，OpenGL Shader Language）</h2>
+        下一节是关于着色器的教程。现在你只需要稍微了解。<br>
+        语法类似于C语言。
+        第一行一定会是一个版本声明：(这是固定的，照抄就行)
+        <code class="block">#version 330 core</code>
+        <h3>顶点着色器</h3>
+        扩展名 <code>*.vs</code>。 <br>
+        接下来，我们使用以下代码（从网格缓冲中）获取顶点属性。
+        <code class="block">layout (location = 0) in vec3 v_pos;</code>
+        <div class="bar">
+            <div class="left"><code>layout (location = 0)</code></div>
+            <span class="hide">：</span>
+            <div class="right">表示变量值来自顶点数据。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>0</code></div>
+            <span class="hide">：</span>
+            <div class="right">表示该变量接收顶点数据中的第0号属性（即 ve_t.siz[0] 对应的数据）。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>in</code></div>
+            <span class="hide">：</span>
+            <div class="right">表示这是一个输入变量。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>vec3</code></div>
+            <span class="hide">：</span>
+            <div class="right">数据类型——三分量（三维）向量。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>v_pos</code></div>
+            <span class="hide">：</span>
+            <div class="right">变量名。</div>
+        </div>
+        接下来是主函数。
+<code class="block">void main(){
+    gl_Position=vec4(v_pos.x,v_pos.y,v_pos.z,1.0);
+}</code>
+        <div class="caut">注意</div><div class="cau">主函数必须是 <code>void</code> 类型。</div>
+        <div class="bar">
+            <div class="left">
+                <code>gl_Position</code>
+            </div>
+            <span class="hide">：</span>
+            <div class="right">
+                顶点着色器的返回值。在主函数中赋值即可。
+                它的数据类型为 <code>vec4</code>（四分量向量）。
+            </div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>vec4( , , , )</code></div>
+            <span class="hide">：</span>
+            <div class="right">返回一个四分量向量。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>x y z</code></div>
+            <span class="hide">：</span>
+            <div class="right">向量的成员。</div>
+        </div>
+        <h3>片段着色器</h3>
+        扩展名 <code>*.fs</code>。 <br>
+        一个输出变量（类型：<code>vec4</code> ）。代表片段颜色。
+        <code class="block">out vec4 fcol;</code>
+        <div class="bar">
+            <div class="left"><code>out</code></div>
+            <span class="hide">：</span>
+            <div class="right">表示这是一个输出变量。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>fcol</code></div>
+            <span class="hide">：</span>
+            <div class="right">变量名。</div>
+        </div>
+        主函数。
+<code class="block">void main(){
+    fcol=vec4(1.0f,0.0f,0.0f,1.0f); // red
+}</code>
+        <h2>绘制一个三角形</h2>
+        调用函数：
+        <code class="block">gl.triangle(int _stt,int _siz);</code>
+        从 <code>_stt</code> 号索引开始，绘制 <code>_siz</code> 个三角形。<br>
+        如：<code class="block">gl.triangle(0,1);</code>
+        代表绘制索引0的三角形。<br><br>
+        好了，我们已经能绘制一个三角形了。<br>
+        <h3 class="inline">例1. </h3>解答 <span class="file">eg1</span><br>
+        <h3 class="inline">练习1. </h3>绘制一个居中的绿色矩形。（提示：把两个三角形拼起来）
+        <a href="1.2.ex1_hint.html">详细提示&答案</a><br>
+        <div class="ext">我们怎么确认这个矩形是由两个三角形拼起来的呢？</div>
+        <div class="ex">
+            将答案的第12行解除注释，再次运行发现仅绘制了三角形的边框。<br>
+            这就是 <span class="def">线框模式</span>。 <br>
+            <div class="bar">
+                <div class="left"><code>gl.line();</code><br><code>gl.fill();</code></div>
+                <div class="right">启用<br>禁用</div>
+            </div>
+        </div>
+        <h3 class="inline">练习2. </h3>在练习1的基础上，修改数据和代码，使两个三角形使用不同的网格缓冲。<a href="1.2.ex2_hint.html">提示&答案</a><br>
+        <h3 class="inline">练习3. </h3>在练习1的基础上，修改数据和代码，使两个三角形使用不同的着色器（其中一个着色器输出绿色，另一个为青色）。答案 <span class="file">ex3</span>。<br>
+        <h1>总结</h1>
+        <h2>gl_t</h2>
+        <div class="bar">
+            <div class="left"><code>gl.triangle(int _stt, int _siz)</code></div>
+            <span class="hide">：</span>
+            <div class="right">从第 <code>_stt</code> 个索引开始，绘制 <code>_siz</code> 个三角形。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.line()</code></div>
+            <span class="hide">：</span>
+            <div class="right">启用线框模式，三角形只画边框。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.fill()</code></div>
+            <span class="hide">：</span>
+            <div class="right">恢复填充模式（默认）。</div>
+        </div>
+        <h2>网格缓冲</h2>
+        <div class="defbar">
+            <span class="def">网格缓冲</span>是用于存储顶点、索引数据的对象。<br>
+        </div>
+        <div class="bar">
+            <div class="left">创建（从文件）</div>
+            <span class="hide">：</span>
+            <div class="right"><code>mesh_buf_t mb("顶点.ve", "索引.in", gle.draw_****_chg);</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">创建（从内存）</div>
+            <span class="hide">：</span>
+            <div class="right"><code>mesh_buf_t mb(ve对象, in对象, gle.draw_****_chg, true);</code><br>第四个参数当前无作用，随便填。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb.bind()</code></div>
+            <span class="hide">：</span>
+            <div class="right">绑定该网格缓冲，之后绘制的三角形将使用它的数据。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>mb.clr()</code></div>
+            <span class="hide">：</span>
+            <div class="right">释放内存，清空数据。</div>
+        </div>
+        <h3>顶点数据</h3>
+        <h4>声明</h4>
+        <code class="block">ve_t ve;</code>
+        <h4>成员</h4>
+        <div class="bar">
+            <div class="left"><code>int mloc</code></div>
+            <span class="hide">：</span>
+            <div class="right">顶点的属性数。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>vector&lt;int&gt; siz</code></div>
+            <span class="hide">：</span>
+            <div class="right">每个属性的分量数。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>vector&lt;float&gt; data</code></div>
+            <span class="hide">：</span>
+            <div class="right">存储了数据的具体内容，存储顺序如图所示。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>clr()</code></div>
+            <span class="hide">：</span>
+            <div class="right">若你不需要这里面的数据了，调用此函数清空数据，释放内存。</div>
+        </div>
+        <h3>索引数据</h3>
+        <h4>声明</h4>
+        <code class="block">in_t in;</code>
+        <h4>成员</h4>
+        <div class="bar">
+            <div class="left">
+                <code>vector&lt;unsigned int&gt; data</code><br>
+                <code>clr()</code>
+            </div>
+            <div class="right">
+                存储顶点编号。<br>
+                若你不需要之，调用此函数清空数据，释放内存。
+            </div>
+        </div>
+
+        <h2>着色器（shader_t）</h2>
+        <div class="bar">
+            <div class="left">创建</div>
+            <span class="hide">：</span>
+            <div class="right"><code>shader_t sd("顶点.vs", "片段.fs");</code></div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>sd.use()</code></div>
+            <span class="hide">：</span>
+            <div class="right">激活这个着色器程序，之后绘制的三角形将使用它。</div>
+        </div>
+        <div class="defbar">
+            <span class="def">顶点着色器</span>是用于接收并传递顶点数据、计算顶点位置的着色器程序。<br>
+        </div>
+        <div class="defbar">
+            <span class="def">片段着色器</span>是用于计算片段（像素）颜色的着色器程序。
+        </div>
+        <br>
+        <a href="1.3.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

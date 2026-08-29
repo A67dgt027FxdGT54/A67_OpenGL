@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>1.5 变换</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>1.5 变换</h1>
+        <p class="red">这一章涉及诸多数学知识，不理解这些数学知识也没关系，但至少学会写代码和运用！</p>
+        <a href="https://learnopengl-cn.github.io/01%20Getting%20started/07%20Transformations/">详细教程</a>
+        <br>
+        我们已经可以创建静态物体了，那么，怎么让物体移动呢？<br>
+        我们可以每帧改变网格缓冲数据，但这太麻烦了。<br>
+        更好的方法是使用<span class="def">矩阵</span>和<span class="def">向量</span>，在顶点着色器中进行位置变换。
+        <h2>向量</h2>
+        向量，是一些数字（<span class="def">分量</span>）所组成的一维数组，也可以看作空间中的有方向有大小的箭头。<br>
+        通过以下代码创建一个向量（就像在着色器里那样）：<code class="block">vecX v;</code>
+        其中，X为分量的个数。<br>
+        向量可以用于表示方向或位置（坐标）。向量的箭头尾部通常被放在原点。<br>
+        <div class="bar">
+            <div class="left">向量取反：获得方向相反的向量 <img src="1.5_vector_negative.png" alt=""></div>
+            <span class="hide">：</span>
+            <div class="right"><code>-u</code></div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">向量相加：将两个向量（箭头）首尾相接 <img src="1.5_vector_add.png" alt=""></div>
+            <span class="hide">：</span>
+            <div class="right"><code>u+v</code></div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">向量相减：<code>u-v</code> 代表从v箭头的头部指向u的 <img src="1.5_vector_sub.png" alt=""></div>
+            <span class="hide">：</span>
+            <div class="right"><code>u-v v-u</code></div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">向量点乘：求两向量夹角的余弦值与二者长度的乘积 </div>
+            <span class="hide">：</span>
+            <div class="right"><code>dot(u,v)</code></div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">求两向量夹角（角度制） <img src="1.5_vector_dot.png" alt=""></div>
+            <span class="hide">：</span>
+            <div class="right"><code>u^v</code></div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">向量叉乘：（仅用于3维（三分量）向量）求与两向量都垂直的向量 <img src="1.5_vector_cross.png" alt=""></div>
+            <span class="hide">：</span>
+            <div class="right"><code>cross(u,v)</code></div>
+        </div>
+        
+        <div class="bar">
+            <div class="left">向量标准化：将向量长度改为1，方向不变 <img src="1.5_vector_normalize.png" alt=""></div>
+            <span class="hide">：</span>
+            <div class="right"><code>~u</code></div>
+        </div>
+
+        <h2>矩阵</h2>
+        <div class="defbar">
+            <span class="def">矩阵</span>是用于存储变换的二维数组。
+        </div>
+        通过以下代码创建一个矩阵（就像在着色器里那样）：<code class="block">matX v;</code>
+        其中，X为矩阵的行数和列数。声明的矩阵会自动初始化为<span class="def">单位矩阵</span>，代表“没有任何变换”。<br>
+        <h3>矩阵乘法</h3>
+        这很复杂，但是你并不用知道它怎么算，只要会 <code>m1*m2</code> 就行了。这可以用来组合多个变换。<br>
+        矩阵也可以乘向量，从而将此向量进行变换。<br>
+        <p class="red">
+            需要注意的是，矩阵乘法不满足交换律，或者说，乘的顺序会影响结果。<br>
+            一般来说，我们按照从右到左的顺序来写：
+            <code class="block">...*m3*m2*m1*v</code>
+            把向量放在最右边，随后从右至左依次乘矩阵。右边的矩阵先用于向量变换，左边的最后。<br>
+            如果只有一个矩阵，也可以这样写：
+            <code class="block">v*=m; // v=m*v</code>
+        </p>
+
+        <h2>变换</h2>
+        我们可以通过以下代码来声明一个变换对象：
+        <code class="block">trans_t tr;</code>
+        然后调用以下函数/赋值以下成员来设置变换：
+        <div class="bar">
+            <div class="left"><code>tr.trans(vec3 在三个轴上的位移);</code></div>
+            <span class="hide">：</span>
+            <div class="right">设置在X,Y,Z三个方向上的平移距离。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>bool tr.rad</code></div>
+            <span class="hide">：</span>
+            <div class="right">是否使用弧度制。默认使用角度制。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>tr.rot(vec3 轴,float 角度);</code></div>
+            <span class="hide">：</span>
+            <div class="right">绕某个轴旋转。(遵循右手定则，大拇指与轴向量指向同一方向，右手四指卷曲方向即为旋转方向)</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>tr.rote(vec3 欧拉角_顺序xyz, string 旋转顺序="YXZ");</code></div>
+            <span class="hide">：</span>
+            <div class="right">按欧拉角旋转，依照字符串规定的顺序绕对应轴旋转一定度数。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>tr.scale(vec3/float 缩放倍数);</code></div>
+            <span class="hide">：</span>
+            <div class="right">按给定倍数缩放。当值为float时，为等比缩放。</div>
+        </div>
+        
+        <div class="bar">
+            <div class="left"><code>mat4 tr.matr()</code></div>
+            <span class="hide">：</span>
+            <div class="right">获取变换矩阵。</div>
+        </div>
+        需要说明的是，修改会覆盖相应属性，两种旋转不能共存。为消除不利影响，无论函数调用顺序如何，均会按照 缩放→旋转→平移 的顺序进行。
+        <br>
+        <h2>实践</h2>
+        <h3 class="inline">例1. </h3> 把一个向量(1,0,0)位移(1,1,0)个单位。<br>
+        <p style="color: blue;">注意，我们通常使用 vec4 存储位置向量（w 分量始终为 1.0）。</p>
+        完整代码：
+<code class="block">#include "header/OpenGL.h"
+using namespace std;
+int main(){
+    vec4 vec(1.0f,0.0f,0.0f,1.0f);
+    trans_t tr;
+    tr.trans(vec3(1.0f,1.0f,0.0f));
+    vec*=tr.matr(); // 即 vec=tr.matr()*vec;
+    cout&lt;&lt;vec.x&lt;&lt;" "&lt;&lt;vec.y&lt;&lt;" "&lt;&lt;vec.z; // output 2 1 0
+    return 0;
+}
+</code>
+        <h3 class="inline">例2. </h3> 在 <span class="file">1.4课 eg2</span> 基础上，把箱子缩放 0.5 倍，然后绕Z轴旋转90度。<br>
+        首先，我们声明一个 <code>trans_t</code> ：
+        <code class="block">trans_t tr;</code>
+        其次，缩放并旋转：
+        <code class="block">tr.scale(0.5f); // or tr.scale(vec3(0.5f,0.5f,0.5f));
+tr.rot(vec3(0.0f,0.0f,1.0f),90.0f); // or tr.rote(vec3(0.0f,0.0f,90.0f));</code>
+        然后在顶点着色器中声明 uniform 并乘以原位置：
+        <code class="block">uniform mat4 tr;</code>
+        <code class="block">gl_Position=tr*vec4(v_pos.x,v_pos.y,v_pos.z,1.0);</code>
+        最后在程序中传入矩阵：
+        <code class="block">sd.setm4("tr",tr.matr());</code>
+        <span class="file">eg2</span>。
+        
+        <div class="warnt">在着色器中无法使用的语句及替代</div>
+        <div class="warn">
+            <div class="bar">
+                <div class="left">
+                    <code>vec*=mat;</code><br>
+                    <code>~vec</code><br>
+                    <code>v1^v2</code><br>
+                </div>
+                <div class="right">
+                    <code>vec=mat*vec;</code>（顺序不能错）<br>
+                    <code>normalize(vec)</code><br>
+                    <code>angle(v1,v2)</code>（需要<code>#include &lt;math.ash&gt;</code>）<br>
+                </div>
+            </div>
+        </div>
+        <div class="tipst">着色器中的 include</div>
+        <div class="tips">
+            在着色器中也可以使用 <code>#include</code> 语句。用法基本与C++类似，但是：<br>
+            <code>#include &lt;...&gt;</code> 源码的路径仅能为 sd_lib\ ，不支持修改。<br>
+            <code>#include "..."</code> 无法直接当作 <code>#include &lt;...&gt;</code> 使用。<br>
+            文件扩展名：
+            <div class="bar">
+                <div class="left">
+                    <code>*.ash</code><br>
+                    <code>*.vsh</code><br>
+                    <code>*.fsh</code><br>
+                </div>
+                <div class="right">
+                    适用于所有着色器<br>
+                    仅适用于顶点着色器<br>
+                    仅适用于片段着色器<br>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="inline">练习1. </h3> 在 <span class="file">eg2</span> 基础上，取消缩放，把箱子移到右下角，随时间不断旋转（当前时间为旋转的弧度值）。<br>
+
+
+        <!-- 总结 -->
+         <!-- 总结 -->
+          <!-- 总结 -->
+           <!-- 总结 -->
+            <!-- 总结 -->
+             <!-- 总结 -->
+              <!-- 总结 -->
+               <!-- 总结 -->
+        <h1>本章总结</h1>
+
+        <div class="defbar">
+            <strong>向量</strong> 是一维数组，可看作有方向和大小的箭头。<br>
+            <strong>矩阵</strong> 是二维数组，用于存储变换。
+        </div>
+        
+        <h2>向量运算（库中支持）</h2>
+        <div class="bar">
+            <div class="left">取反</div>
+            <span class="hide">：</span>
+            <div class="right"><code>-u</code> 获得方向相反的向量</div>
+        </div>
+        <div class="bar">
+            <div class="left">加法</div>
+            <span class="hide">：</span>
+            <div class="right"><code>u+v</code> 首尾相接</div>
+        </div>
+        <div class="bar">
+            <div class="left">减法</div>
+            <span class="hide">：</span>
+            <div class="right"><code>u-v</code> 从 <code>v</code> 的头部指向 <code>u</code> 的头部</div>
+        </div>
+        <div class="bar">
+            <div class="left">点乘</div>
+            <span class="hide">：</span>
+            <div class="right"><code>dot(u,v)</code> 结果为标量</div>
+        </div>
+        <div class="bar">
+            <div class="left">夹角（角度制）</div>
+            <span class="hide">：</span>
+            <div class="right"><code>u^v</code> 返回两向量夹角（0°~180°）</div>
+        </div>
+        <div class="bar">
+            <div class="left">叉乘（仅3维）</div>
+            <span class="hide">：</span>
+            <div class="right"><code>cross(u,v)</code> 得到与两者都垂直的向量</div>
+        </div>
+        <div class="bar">
+            <div class="left">标准化</div>
+            <span class="hide">：</span>
+            <div class="right"><code>~u</code> 将向量长度变为1，方向不变（库自定义）</div>
+        </div>
+        
+        <h2>矩阵</h2>
+        <div class="bar">
+            <div class="left">声明</div>
+            <span class="hide">：</span>
+            <div class="right"><code>mat2 / mat3 / mat4 m;</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">乘法</div>
+            <span class="hide">：</span>
+            <div class="right"><code>m1 * m2</code> 组合变换（不满足交换律）</div>
+        </div>
+        <div class="bar">
+            <div class="left">乘向量</div>
+            <span class="hide">：</span>
+            <div class="right"><code>m * v</code> 或 <code>v *= m</code> 对向量应用变换</div>
+        </div>
+        <div class="bar">
+            <div class="left">书写顺序</div>
+            <span class="hide">：</span>
+            <div class="right">从右到左：<code>... * m3 * m2 * m1 * v</code>（最右边先作用）</div>
+        </div>
+        
+        <h2>变换对象（trans_t）</h2>
+        <div class="bar">
+            <div class="left">声明</div>
+            <span class="hide">：</span>
+            <div class="right"><code>trans_t tr;</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">平移</div>
+            <span class="hide">：</span>
+            <div class="right"><code>tr.trans(vec3 位移);</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">旋转（轴角）</div>
+            <span class="hide">：</span>
+            <div class="right"><code>tr.rot(vec3 轴, float 角度);</code> 遵循右手定则</div>
+        </div>
+        <div class="bar">
+            <div class="left">旋转（欧拉角）</div>
+            <span class="hide">：</span>
+            <div class="right"><code>tr.rote(vec3 欧拉角,bool 旋转顺序="YXZ");</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">缩放</div>
+            <span class="hide">：</span>
+            <div class="right"><code>tr.scale(vec3 各轴倍数);</code> 或 <code>tr.scale(float 统一倍数);</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">角度制/弧度制</div>
+            <span class="hide">：</span>
+            <div class="right"><code>tr.rad = true/false;</code> 默认 <code>false</code>（角度制）</div>
+        </div>
+        <div class="bar">
+            <div class="left">获取矩阵</div>
+            <span class="hide">：</span>
+            <div class="right"><code>mat4 m = tr.matr();</code></div>
+        </div>
+        
+        <div class="defbar">
+            <strong>重要顺序</strong><br>
+            无论调用函数的顺序如何，最终组合的顺序固定为：<strong>缩放 → 旋转 → 平移</strong>。<br>
+            两种旋转（轴角 / 欧拉角）不能共存，最后一次调用覆盖之前的设置。
+        </div>
+        
+        <h2>在着色器中使用矩阵</h2>
+        <div class="bar">
+            <div class="left">顶点着色器</div>
+            <span class="hide">：</span>
+            <div class="right">声明 <code>uniform mat4 tr;</code>，然后 <code>gl_Position = tr * vec4(顶点坐标, 1.0);</code></div>
+        </div>
+        <div class="bar">
+            <div class="left">C++ 传递</div>
+            <span class="hide">：</span>
+            <div class="right"><code>sd.setm4("tr", tr.matr());</code> （每帧如有变化则每帧调用）</div>
+        </div>
+
+        <div class="warnt">在着色器中无法使用的语句及替代</div>
+        <div class="warn">
+            <div class="bar">
+                <div class="left">
+                    <code>vec*=mat;</code><br>
+                    <code>~vec</code><br>
+                    <code>v1^v2</code><br>
+                </div>
+                <div class="right">
+                    <code>vec=mat*vec;</code>（顺序不能错）<br>
+                    <code>normalize(vec)</code><br>
+                    <code>angle(v1,v2)</code>（需要<code>#include &lt;math.ash&gt;</code>）<br>
+                </div>
+            </div>
+        </div>
+
+        <br>
+        <a href="1.6.html"><span class="btn">下一节</span></a>
+    </body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>2.4 多光源</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- <script src=""></script> -->
+    </head>
+    <body>
+        <h1>2.4 多光源</h1>
+        在实际场景中，往往会有多个光源。<br>
+        <h3 class="inline">例1. </h3>加入多个光源（一个定向光，四个点光源，一个聚光[手电筒]）。<br>
+        为了简便，我们就以 <span class="file">2.3课 eg1</span> 为基础来修改。<br>
+
+        <h2>场景</h2>
+        实际场景通常比较复杂，所以我们用之前的十个箱子的场景来模拟。
+        定义箱子的位置：
+<code class="block">vec3 cube_pos[] = {
+	vec3( 0.0f,  0.0f,  0.0f), 
+	vec3( 2.0f,  5.0f, -15.0f), 
+	vec3(-1.5f, -2.2f, -2.5f),  
+	vec3(-3.8f, -2.0f, -12.3f),  
+	vec3( 2.4f, -0.4f, -3.5f),  
+	vec3(-1.7f,  3.0f, -7.5f),  
+	vec3( 1.3f, -2.0f, -2.5f),  
+	vec3( 1.5f,  2.0f, -2.5f), 
+	vec3( 1.5f,  0.2f, -1.5f), 
+	vec3(-1.3f,  1.0f, -1.5f)  
+};</code>
+        修改绘制箱子的代码：
+<code class="block">// draw object
+sd.setm4("view",cam.view());
+sd.setm4("proj",proj);
+trans_t obj_tr;
+for(int i=0;i&lt;10;i++){
+    obj_tr.trans(cube_pos[i]);
+    obj_tr.rot(vec3(1.0f,0.3f,0.5f),i*20.0f);
+    sd.setm4("model",obj_tr.matr());
+    sd.setm3("m_norm",obj_tr.norm_matr());
+    gl.triangle(0,12);
+}</code>
+        此时，我们不再让箱子随时间旋转；但箱子确实有了变换，法线矩阵就不能为单位矩阵了。于是我们调用 <code>mat3 tr.norm_matr()</code> 获取法线矩阵。
+
+        <h2>光源</h2>
+        一个 light_t 不足以支持多个光源，因此我们定义一个数组：
+        <code class="block">unifrom light_t u_lt[6];</code>
+        <code class="block">light_t lt[6];</code>
+        并改为循环赋值：
+        <code class="block">for(int i=0;i&lt;6;i++) lt[i]=u_lt[i];</code>
+        <h2>定向光</h2>
+        直接使用原有的代码即可，但要把 <code>lt</code> 赋值给 <code>u_lt[0]</code>：
+        <code class="block">sd.setlight("u_lt[0]",lt);
+// or sd.setlight_array("u_lt",0,lt); </code>
+        <div class="tipst"></div><div class="tips"><div class="bar">
+            <div class="left" style="width: 60%;"><code>sd.setlight_array("数组名",下标, lt)</code></div>
+            <div class="right">传递光源数组 uniform。</div>
+        </div></div>
+        用两个光源照射物体，必然比一个更亮。因此，我们得出：光照的亮度是累加的。基于此，我们修改一下光照计算。先将 <code>fcol</code> 设置为0，然后不断加上计算出的颜色：
+        <code class="block">fcol=vec4(0.0);</code>
+        <code class="block">fcol+=lighting(t_norm,cam_pos-f_pos,mate,lt[0]);</code>
+        运行，即可应用定向光效果。<span class="file">eg1/step1</span>。<br>
+
+        <h2>点光源</h2>
+        我们使用4个点光源，首先定义位置：
+        <code class="block">vec3 lt_pos[]={
+    vec3(0.7f,0.2f,2.0f),
+    vec3(2.3f,-3.3f,-4.0f),
+    vec3(-4.0f,2.0f,-12.0f),
+    vec3(0.0f,0.0f,-3.0f)
+};</code>
+        传入衰减系数：<code class="block">lt.kc=1.0f;lt.kl=0.09f;lt.kq=0.032f;</code>
+        然后加入一个循环：
+        <code class="block">for(int i=1;i&lt;=4;i++){</code>
+        <span class="hide">}</span>在循环内设置 <code>lt.type</code> 、传入 <code>lt</code> 、设置光源位置：
+        <code class="block">lt.type=1;
+sd.setlight_array("u_lt",i,lt);
+// or sd.setlight(sdu("u_lt",i),lt);
+sd.set3f(sdu("lt_pos",i),lt_pos[i-1]);</code>
+        <div class="tipst"></div><div class="tips"><code class="block">sdu(string uniform数组名,int 下标);
+sdu(string uniform数组名,int 下标,string 成员);
+sdu(string uniform数组名,string 成员);</code> 用于替换 <code>"变量名"</code> ，以传递 数组、结构体数组、结构体 uniform。</div>
+        在片段着色器中，将光源位置改为数组：<code class="block">uniform vec3 lt_pos[6];</code>
+        因为有多个光源，所以我们使用一个循环：<code class="block">for(int i=0;i&lt;5;i++){</code>
+        <span class="hide">}</span>在光源类型非定向光时计算 <code>dir</code>：
+        <code class="block">if(lt[i].type!=0) lt[i].dir=f_pos-lt_pos[i];</code>
+        在最终颜色上累加光照计算结果：<code class="block">fcol+=lighting(t_norm,cam_pos-f_pos,mate,lt[i]); </code>
+        运行，即可应用点光源效果。可以先将某些光源的 <code>type</code> 设置为 -1 以观察其余光源效果。<span class="file">eg1/step2</span>。<br>
+
+        <h2>聚光</h2>
+        同理。
+        <code class="block">//     Spotlight
+lt.type=2;
+lt.icutoff=12.5f;lt.ocutoff=17.5f;
+lt.spot_dir=cam.get_front();
+sd.setlight("u_lt[5]",lt);
+// or sd.setlight_array("u_lt",5,lt);
+sd.set3f("lt_pos[5]",cam.pos);
+// or sd.set3f(sdu("lt_pos",5),cam.pos);</code>
+        记得改变循环边界。
+        <code class="block">for(int i=0;i&lt;6;i++){
+    if(lt[i].type!=0) lt[i].dir=f_pos-lt_pos[i];
+    fcol+=lighting(t_norm,cam_pos-f_pos,mate,lt[i]); 
+}</code>
+        运行，即可应用点光源效果。<span class="file">eg1/final</span>。<br>
+        <br>
+        <a href="doc.html"><span class="btn">全部功能总结/文档</span></a>
+    </body>
+</html>

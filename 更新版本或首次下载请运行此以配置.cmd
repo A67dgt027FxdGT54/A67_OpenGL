@@ -1,0 +1,7 @@
+assoc .vs="GLSL Vertex Shader"
+assoc .fs="GLSL Fragment Shader"
+assoc .vsh="GLSL Vertex Shader Header"
+assoc .fsh="GLSL Fragment Shader Header"
+assoc .ash="GLSL Shaders Header"
+assoc .ve="Mesh VE Data"
+assoc .in="Mesh IN Data"
