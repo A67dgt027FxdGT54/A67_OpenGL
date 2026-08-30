@@ -13,6 +13,7 @@ learn/
 lib/
 res/
 tutorial/
+ext/
 /*.txt
 /*.cpp
 /*.exe

@@ -544,6 +544,9 @@ void glfw_error_callback(int _error, const char* _desc) { // GLFW ´íÎó»Øµ÷£ºµ±GL
 }
 
 class timer_t{
+private:
+	std::map<int,std::pair<float,std::function<void()> > > itvms;
+	int tot=0;
 public:
 	float abso=0.0f,las=0.0f,dis=0.0f,cur=0.0f,offs=0.0f;
 	float fps=60;int curf=0;
@@ -554,6 +557,12 @@ public:
 		abso=glfwGetTime();
 		cur=abso-offs;
 		dis=cur-las;
+		
+		for(auto& g:itvms){
+			float d=g.second.first;
+			auto itvm=g.second.second;
+			if(floor(cur/d)-floor(las/d)>=0.99f) itvm();
+		}
 	}
 	void clear(){
 		offs=abso;
@@ -567,7 +576,20 @@ public:
 		int slp=int(1000.0f*(tgt-abso));
 		if(slp>0)Sleep(slp);
 	}
+	float get_fps(){
+		return 1.0f/dis;
+	}
+	void add_itvm(int id,float d,std::function<void()> itvm){ // intervalometer
+		itvms[id]=std::make_pair(d,itvm);
+	}
+	void del_itvm(int id){
+		itvms.erase(id);
+	}
+	void clr_itvm(){
+		itvms.clear();
+	}
 };
+
 class gl_t{
 private:
 	bool _edep,_eblend,_ecf;
