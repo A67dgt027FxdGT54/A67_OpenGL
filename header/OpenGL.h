@@ -610,6 +610,8 @@ public:
 	void clr_rgba(unsigned int _rgba){clr_col((_rgba>>24)/255.0f,((_rgba>>16)&0xff)/255.0f,((_rgba>>8)&0xff)/255.0f,(_rgba&0xff)/255.0f);}
 	void set_win(int _ww,int _wh){winw=_ww;winh=_wh;} 
 	void main_loop(){ // 用户自行bind 
+		// 11. Call framebuffer_size_callback
+		framebuffer_size_callback(nullptr,winw,winh);
 		while(!glfwWindowShouldClose(window)){
 			show();
 		    glfwSwapBuffers(window);
@@ -688,6 +690,7 @@ public:
 //		
 //		// 10.鼠标设置
 //	    if(_use_mouse)glfwSetCursorPosCallback(window, mouse_callback),glfwSetScrollCallback(window, scroll_callback); 
+		
 	}
 	void triangle(int _stt,int _siz){glDrawElements(GL_TRIANGLES, _siz*3, GL_UNSIGNED_INT, (void*)(uintptr_t)(_stt*3*4));}
 	float w_div_h(){return (float)(winw)/(float)(winh);}
@@ -909,7 +912,7 @@ struct trans_t{
 	void scale(float _scale){
 		mscale=vec3(_scale,_scale,_scale);
 	}
-	mat4 matr(){
+	mat4 matr() const{
 		glm::mat4 _trans;
 		_trans=glm::translate(_trans,mtrans);
 		if(use_eul){
