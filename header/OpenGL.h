@@ -620,7 +620,8 @@ public:
 	}
 	bool kpr(int key){
 		if('a'<=key&&key<='z') key-=32;
-		return glfwGetKey(window,key)==GLFW_PRESS;
+		if(key>7) return glfwGetKey(window,key)==GLFW_PRESS;
+		else return glfwGetMouseButton(window,key)==GLFW_PRESS;
 	}
 	bool kprf(int key){
 		if(kpr(key)){
