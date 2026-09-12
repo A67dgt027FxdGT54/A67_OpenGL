@@ -655,9 +655,27 @@ private:
 		result+=code.substr(nmstt);
 		return result;
 	}
-public:
 	unsigned int vs,fs,sp;
+public:
 	shader_t (){}
+	~shader_t(){
+		if(!sp) return;
+		glDeleteProgram(sp); 
+	}
+	shader_t(const shader_t& other)=delete;
+	shader_t& operator =(const shader_t& other) =delete;
+	shader_t(const shader_t&& other){
+		if(!other.sp) return;
+		oncepath=std::move(other.oncepath);
+		sp      =other.sp;
+		other.sp=0;
+	}
+	shader_t& operator =(const shader_t&& other){
+		if(!other.sp) return;
+		oncepath=std::move(other.oncepath);
+		sp      =other.sp;
+		other.sp=0;
+	}
 	shader_t(const char* vs_path,const char* fs_path){
 		std::string svscode=get_file(vs_path),
 					sfscode=get_file(fs_path);
@@ -702,38 +720,50 @@ public:
 		glDeleteShader(vs);
 		glDeleteShader(fs);
 	}
-	void use(){glUseProgram(sp);}
+	void use(){
+		if(!sp) return;glUseProgram(sp);}
 	void setb	(const std::string &name, bool value) {
+		if(!sp) return;
 		glUniform1i(glGetUniformLocation(sp, name.c_str()), (int)value);
 	}
 	void seti	(const std::string &name, int value){
+		if(!sp) return;
 		glUniform1i(glGetUniformLocation(sp, name.c_str()), value);
 	}
 	void setf	(const std::string &name, float value){
+		if(!sp) return;
 		glUniform1f(glGetUniformLocation(sp, name.c_str()), value);
 	}
 	void set2f	(const std::string &name, float v1,float v2){
+		if(!sp) return;
 		glUniform2f(glGetUniformLocation(sp, name.c_str()), v1,v2);
 	}
 	void set2f  (const std::string &name, glm::vec2 vec){
+		if(!sp) return;
 		glUniform2f(glGetUniformLocation(sp, name.c_str()), vec.x,vec.y);
 	}
 	void set3f	(const std::string &name, float v1,float v2,float v3){
+		if(!sp) return;
 		glUniform3f(glGetUniformLocation(sp, name.c_str()), v1,v2,v3);
 	}
 	void set3f	(const std::string &name, glm::vec3 vec){
+		if(!sp) return;
 		glUniform3f(glGetUniformLocation(sp, name.c_str()), vec.x,vec.y,vec.z);
 	}
 	void set4f	(const std::string &name, float v1,float v2,float v3,float v4){
+		if(!sp) return;
 		glUniform4f(glGetUniformLocation(sp, name.c_str()), v1,v2,v3,v4);
 	}
 	void set4f	(const std::string &name, glm::vec4 vec){
+		if(!sp) return;
 		glUniform4f(glGetUniformLocation(sp, name.c_str()), vec.x,vec.y,vec.z,vec.w);
 	}
 	void setm3	(const std::string &name, glm::mat3 _matr){
+		if(!sp) return;
 		glUniformMatrix3fv(glGetUniformLocation(sp, name.c_str()), 1, GL_FALSE, glm::value_ptr(_matr));
 	}
 	void setm4	(const std::string &name, glm::mat4 _matr){
+		if(!sp) return;
 		glUniformMatrix4fv(glGetUniformLocation(sp, name.c_str()), 1, GL_FALSE, glm::value_ptr(_matr));
 	}
 	void setlight(const std::string &name,light_t lt){
@@ -945,6 +975,12 @@ public:
 		glfwSetScrollCallback(window, scroll_callback); 
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
+	
+	gl_t() =delete;
+	gl_t(const gl_t& other) =delete;
+	gl_t& operator =(const gl_t& other) =delete;
+	gl_t(const gl_t&& other) =delete;
+	gl_t& operator =(const gl_t&& other) =delete;
 };
 
 #if 0
