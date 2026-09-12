@@ -80,20 +80,33 @@ std::string sdu(std::string unif,std::string memb){
 
 struct angle_t{
 	float _rad;
-	angle_t(float r):_rad(r){
+	explicit angle_t(float r):_rad(r){
+	}
+	angle_t():_rad(0.0f){
+	}
+	angle_t(const angle_t& y){
+		_rad=y._rad;
+	}
+	angle_t& operator =(const angle_t& y){
+		_rad=y._rad;
+		return *this;
+	}
+	angle_t& operator =(angle_t&& y){
+		_rad=y._rad;
+		return *this;
 	}
 };
 using euler_t=glm::tvec3<angle_t>;
-angle_t operator ""_deg (float deg){
-	return angle_t{radians(deg)};
-}
-angle_t operator ""_rad (float rad){
-	return angle_t{rad};
-}
-angle_t operator ""_deg (int deg){
+angle_t operator ""_deg (long double deg){
 	return angle_t{radians((float)deg)};
 }
-angle_t operator ""_rad (int rad){
+angle_t operator ""_rad (long double rad){
+	return angle_t{(float)rad};
+}
+angle_t operator ""_deg (unsigned long long deg){
+	return angle_t{radians((float)deg)};
+}
+angle_t operator ""_rad (unsigned long long rad){
 	return angle_t{(float)rad};
 }
 float radians(angle_t ang){
@@ -112,6 +125,8 @@ angle_t normalize(angle_t ang){ // (-180,180]
 	angle_t res;
 	res._rad = fmod(ang._rad,radians(360.0f));
 	if(res._rad > radians(180.0f)) res._rad -= radians(360.0f);
+	if(res._rad <= radians(-180.0f)) res._rad += radians(360.0f);
+	return res;
 }
 angle_t operator +(angle_t x){
 	return x;
@@ -138,10 +153,10 @@ angle_t operator /(angle_t x,int y){
 	return angle_t{x._rad/(float)y};
 }
 angle_t operator %(angle_t x,float y){
-	return angle_t{fmod(x._rad,y)};
+	return angle_t{(float)fmod((double)x._rad,(double)y)};
 }
 angle_t operator %(angle_t x,int y){
-	return angle_t{fmod(x._rad,(float)y)};
+	return angle_t{(float)fmod((double)x._rad,(double)y)};
 }
 bool operator ==(angle_t x,angle_t y){
 	return abs(x._rad - y._rad) <= 1e-9;
@@ -161,43 +176,35 @@ bool operator <=(angle_t x,angle_t y){
 bool operator >=(angle_t x,angle_t y){
 	return !(x<y);
 }
-angle_t& operator =(angle_t& x,angle_t& y){
-	x._rad=y._rad;
-	return x;
-}
-angle_t& operator =(angle_t& x,angle_t&& y){
-	x._rad=y._rad;
-	return x;
-}
-angle_t& operator +=(angle_t& x,angle_t& y){
+angle_t& operator +=(angle_t& x,const angle_t& y){
 	x._rad+=y._rad;
 	return x;
 }
-angle_t& operator -=(angle_t& x,angle_t& y){
+angle_t& operator -=(angle_t& x,const angle_t& y){
 	x._rad-=y._rad;
 	return x;
 }
-angle_t& operator *=(angle_t& x,float& y){
+angle_t& operator *=(angle_t& x,float y){
 	x=x*y;
 	return x;
 }
-angle_t& operator *=(angle_t& x,int& y){
+angle_t& operator *=(angle_t& x,int y){
 	x=x*y;
 	return x;
 }
-angle_t& operator /=(angle_t& x,float& y){
+angle_t& operator /=(angle_t& x,float y){
 	x=x/y;
 	return x;
 }
-angle_t& operator /=(angle_t& x,int& y){
+angle_t& operator /=(angle_t& x,int y){
 	x=x/y;
 	return x;
 }
-angle_t& operator %=(angle_t& x,float& y){
+angle_t& operator %=(angle_t& x,float y){
 	x=x%y;
 	return x;
 }
-angle_t& operator %=(angle_t& x,int& y){
+angle_t& operator %=(angle_t& x,int y){
 	x=x%y;
 	return x;
 }
@@ -270,11 +277,11 @@ gle;
 
 struct image_t{
 	std::vector<unsigned char> data;
-	int width,height,chan;
+	int width=0,height=0,chan=0;
 	void load_from_file(const char* path){
 		stbi_set_flip_vertically_on_load(true);
-		unsigned char* dat=stbi_load(img_path,&pw,&ph,&chan,0);
-		if(dat) data.assign(dat,dat+pw*ph*chan);
+		unsigned char* dat=stbi_load(path,&width,&height,&chan,0);
+		if(dat) data.assign(dat,dat+width*height*chan);
 		else wlog("ERROR","Failed to Load Texture"),exit(-1);
 		stbi_image_free(dat);
 	}
@@ -299,12 +306,12 @@ private:
 	}
 	unsigned int id=0;
 public:
-	int pw,ph,un=0,chan;
+	int pw=0,ph=0,un=0,chan=0;
 	image_t img;
 	texture_t() =default;
-	texture_t(const _t& other) =delete;
-	texture_t& operator =(const _t& other) =delete;
-	texture_t(const _t&& other){
+	texture_t(const texture_t& other) =delete;
+	texture_t& operator =(const texture_t& other) =delete;
+	texture_t(texture_t&& other) noexcept{
 		ms  =other.ms;
 		mt  =other.mt;
 		mr  =other.mr;
@@ -319,7 +326,8 @@ public:
 		img =std::move(other.img);
 		other.id=0;
 	}
-	texture_t& operator =(const _t&& other){
+	texture_t& operator =(texture_t&& other) noexcept{
+    	if(this==&other) return *this;
 		if(cr&&id) glDeleteTextures(1,&id);
 		ms  =other.ms;
 		mt  =other.mt;
@@ -334,6 +342,7 @@ public:
 		chan=other.chan;
 		img =std::move(other.img);
 		other.id=0;
+		return *this;
 	}
 	texture_t(const char* img_path,bool _use_alpha/* deprecated */,int _unit=0){
 		un=_unit;
@@ -343,6 +352,7 @@ public:
 		chan=img.chan;
 	}
 	void build(const char* img_path,bool _use_alpha/* deprecated */,int _unit=0){
+		if(cr&&id){ glDeleteTextures(1,&id); id=0; cr=0; }
 		un=_unit;
 		img.load_from_file(img_path);
 		pw=img.width;
@@ -381,6 +391,7 @@ public:
 		
 		if(chan==4) mc=GL_RGBA;
 		if(chan==3) mc=GL_RGB;
+		if(chan==2) mc=GL_RG;
 		if(chan==1) mc=GL_RED;
 		
 		glTexImage2D(GL_TEXTURE_2D,0,mc,pw,ph,0,mc,GL_UNSIGNED_BYTE,img.data.data());
@@ -412,7 +423,7 @@ void tex_border_rgba(unsigned int _rgba){tex_border_col((_rgba>>24)/255.0f,((_rg
 
 struct ve_t{
 	std::vector<float> data;
-	int mloc;
+	int mloc=0;
 	std::vector<int> siz;
 	void clr(){std::vector<float>().swap(data);}
 	int calc_sum(){
@@ -446,8 +457,9 @@ public:
 		std::vector<int>().swap(_ve.siz);
 		for(int _i=0,_t;_i<_ve.mloc;_i++) vin>>_t,_ve.siz.push_back(_t);
 		float _tmp;
+		int _itmp;
 		while(vin>>_tmp) _ve.data.push_back(_tmp);
-		while(iin>>_tmp) _in.data.push_back(_tmp);
+		while(iin>>_itmp) _in.data.push_back(_itmp);
 	}
     void upload(GLenum _mode) { // 自动bind 
     	if(!vao) return;
@@ -475,7 +487,7 @@ public:
 	}
 	mesh_buf_t(const mesh_buf_t& other) =delete;
 	mesh_buf_t& operator =(const mesh_buf_t& other) =delete;
-	mesh_buf_t(const mesh_buf_t&& other){
+	mesh_buf_t(mesh_buf_t&& other) noexcept{
 		vao=other.vao;
 		vbo=other.vbo;
 		ebo=other.ebo;
@@ -485,7 +497,8 @@ public:
 		other.vbo=0;
 		other.ebo=0;
 	}
-	mesh_buf_t& operator =(const mesh_buf_t&& other){
+	mesh_buf_t& operator =(mesh_buf_t&& other) noexcept{
+    	if(this==&other) return *this;
 		if(vao){
 	        glDeleteBuffers(1,&vbo);
 	        glDeleteBuffers(1,&ebo);
@@ -499,6 +512,7 @@ public:
 		other.vao=0;
 		other.vbo=0;
 		other.ebo=0;
+		return *this;
 	} 
 	mesh_buf_t(const char* ve_path,const char* in_path,GLenum _upload_mode) { // 自动bind 
         glGenVertexArrays(1,&vao);
@@ -584,7 +598,7 @@ struct light_t{
 	bool use_angle=0;
 	float icutoff=12.5f,ocutoff=17.5f;/*2*/
 	angle_t icutoff_ang=12.5_deg,ocutoff_ang=17.5_deg;
-	int type;
+	int type=0;
 };
 class shader_t{
 private:
@@ -655,7 +669,7 @@ private:
 		result+=code.substr(nmstt);
 		return result;
 	}
-	unsigned int vs,fs,sp;
+	unsigned int vs=0,fs=0,sp=0;
 public:
 	shader_t (){}
 	~shader_t(){
@@ -664,17 +678,21 @@ public:
 	}
 	shader_t(const shader_t& other)=delete;
 	shader_t& operator =(const shader_t& other) =delete;
-	shader_t(const shader_t&& other){
+	shader_t(shader_t&& other) noexcept{
 		if(!other.sp) return;
 		oncepath=std::move(other.oncepath);
 		sp      =other.sp;
 		other.sp=0;
 	}
-	shader_t& operator =(const shader_t&& other){
-		if(!other.sp) return;
+	shader_t& operator =(shader_t&& other) noexcept{
+    	if(this==&other) return *this;
+		if(sp) glDeleteProgram(sp); 
+		sp=0;
+		if(!other.sp) return *this;
 		oncepath=std::move(other.oncepath);
 		sp      =other.sp;
 		other.sp=0;
+		return *this;
 	}
 	shader_t(const char* vs_path,const char* fs_path){
 		std::string svscode=get_file(vs_path),
@@ -828,7 +846,7 @@ public:
 		if(slp>0)Sleep(slp);
 	}
 	float get_fps(){
-		return 1.0f/dis;
+		return dis>0.0f?1.0f/dis:0.0f;
 	}
 	void add_itvm(int id,float d,std::function<void()> itvm){ // intervalometer
 		itvms[id]=std::make_pair(d,itvm);
@@ -843,7 +861,7 @@ public:
 
 class gl_t{
 private:
-	bool _edep,_eblend,_ecf;
+	bool _edep=0,_eblend=1,_ecf=0;
 	std::map<int,bool> _kdn; 
 public:
 	int winw,winh;
@@ -862,7 +880,7 @@ public:
 	void set_win(int _ww,int _wh){winw=_ww;winh=_wh;} 
 	void main_loop(){ // 用户自行bind 
 		// 11. Call framebuffer_size_callback
-		framebuffer_size_callback(nullptr,winw,winh);
+		framebuffer_size_callback(window,winw,winh);
 		while(!glfwWindowShouldClose(window)){
 			show();
 		    glfwSwapBuffers(window);
@@ -946,12 +964,12 @@ public:
 	}
 	void triangle(int _stt,int _siz){glDrawElements(GL_TRIANGLES, _siz*3, GL_UNSIGNED_INT, (void*)(uintptr_t)(_stt*3*4));}
 	float w_div_h(){return (float)(winw)/(float)(winh);}
-	bool dept(bool enable){
+	void dept(bool enable){
 		_edep=enable;
 		if(enable) glEnable(GL_DEPTH_TEST);
 		else glDisable(GL_DEPTH_TEST);
 	}
-	bool blend(bool enable){
+	void blend(bool enable){
 		_eblend=enable;
 		if(enable) {
 			glEnable(GL_BLEND);
@@ -959,18 +977,18 @@ public:
 		}
 		else glDisable(GL_BLEND);
 	}
-	bool cull_face(bool enable){
+	void cull_face(bool enable){
 		_ecf=enable;
 		if(enable)
 		 glEnable(GL_CULL_FACE);
 		else
 		 glDisable(GL_CULL_FACE);
 	}
-	bool mouse_cb(){
+	void mouse_cb(){
 		glfwSetCursorPosCallback(window, mouse_callback);
 		glfwSetScrollCallback(window, scroll_callback); 
 	}
-	bool mouse(){
+	void mouse(){
 		glfwSetCursorPosCallback(window, mouse_callback);
 		glfwSetScrollCallback(window, scroll_callback); 
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -979,8 +997,8 @@ public:
 	gl_t() =delete;
 	gl_t(const gl_t& other) =delete;
 	gl_t& operator =(const gl_t& other) =delete;
-	gl_t(const gl_t&& other) =delete;
-	gl_t& operator =(const gl_t&& other) =delete;
+	gl_t(gl_t&& other) =delete;
+	gl_t& operator =(gl_t&& other) =delete;
 };
 
 #if 0
@@ -1015,6 +1033,7 @@ glm::mat4 transr(glm::vec3 _scale_x,float _rotate_rad,glm::vec3 _rotate_axis,glm
 void norma(float& ang){ // (-180,180]
 	ang=fmod(ang,360.0f);
 	if(ang>180.0f) ang-=360.0f;
+	if(ang<= -180.0f) ang+=360.0f;
 }
 class camera_t{
 public:
@@ -1055,7 +1074,7 @@ public:
         right= ~vec3(rt4.x,rt4.y,rt4.z);
 	}
 	
-	camera_t(){}
+	camera_t(){upd();}
 	camera_t(vec3 _pos,float _yaw=-90.0f,float _pitch=0.0f,float _roll=0.0f){
 		pos=_pos;
 		yaw=_yaw;
@@ -1064,7 +1083,7 @@ public:
 		norma(   yaw   );norma(  pitch    );norma(roll);
 		upd();
 	}
-	camera_t(vec3 _pos, angle_t _yaw=-90.0_deg, angle_t _pitch=0.0_deg, angle_t _roll=0.0_deg)
+	camera_t(vec3 _pos, angle_t _yaw, angle_t _pitch=0.0_deg, angle_t _roll=0.0_deg)
 		:camera_t(_pos, degrees(_yaw), degrees(_pitch), degrees(_roll)){
 		}
 	camera_t(float posX,float posY,float posZ,float _yaw=-90.0f,float _pitch=0.0f,float _roll=0.0f){
@@ -1075,7 +1094,7 @@ public:
 		norma(   yaw   );norma(  pitch    );norma(roll);
 		upd();
 	}
-	camera_t(float posX,float posY,float posZ, angle_t _yaw=-90.0_deg, angle_t _pitch=0.0_deg, angle_t _roll=0.0_deg)
+	camera_t(float posX,float posY,float posZ, angle_t _yaw, angle_t _pitch=0.0_deg, angle_t _roll=0.0_deg)
 		:camera_t(posX, posY, posZ, degrees(_yaw), degrees(_pitch), degrees(_roll)){
 		}
 	void set_yaw(float _yaw){yaw=_yaw;norma(  yaw    );upd();}
@@ -1167,11 +1186,10 @@ private:
 		 mrota =vec3(1.0f,0.0f,0.0f),
 		 mscale =vec3(1.0f,1.0f,1.0f);
 	angle_t mrot=0_deg;
-	euler_t mrote=euler(0_deg,0_deg,0_deg);
+	euler_t mrote=euler_t(0_deg,0_deg,0_deg);
 	std::string mrots="YXZ";
 public:
 	bool use_eul=0;
-	bool use_angle=0;
 	bool rad=0;
 	void trans(vec3 _trans){
 		mtrans=_trans;
