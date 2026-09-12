@@ -268,11 +268,28 @@ gle;
 
 #define trans_nr 0.0f,glm::vec3(1.0f,0.0f,0.0f) // deprecated
 
+struct image_t{
+	std::vector<unsigned char> data;
+	int width,height,chan;
+	void load_from_file(const char* path){
+		stbi_set_flip_vertically_on_load(true);
+		unsigned char* dat=stbi_load(img_path,&pw,&ph,&chan,0);
+		if(dat) data.assign(dat,dat+pw*ph*chan);
+		else wlog("ERROR","Failed to Load Texture"),exit(-1);
+		stbi_image_free(dat);
+	}
+	void destroy(){
+		width=0;
+		height=0;
+		chan=0;
+		std::vector<unsigned char>().swap(data);
+	}
+};
 class texture_t{ 
 private:
 	GLenum ms=GL_REPEAT, mt=GL_REPEAT, mr=GL_REPEAT, mn=GL_LINEAR_MIPMAP_LINEAR, mg=GL_LINEAR, mc=GL_RGB;
 	bool cr=0,
-		 alpha=0; /* DISABLED */
+		 alpha=0; /* deprecated */
 	void par(){
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ms);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, mt);
@@ -280,32 +297,64 @@ private:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mn);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mg);
 	}
-	std::vector<unsigned char> data;
+	unsigned int id=0;
 public:
 	int pw,ph,un=0,chan;
-	unsigned int id=0;
-	texture_t(){}
-	texture_t(const char* img_path,bool _use_alpha/* DISABLED */,int _unit=0){
-		un=_unit;
-		stbi_set_flip_vertically_on_load(true);
-		unsigned char* dat=stbi_load(img_path,&pw,&ph,&chan,0);
-		if(dat){data.assign(dat,dat+pw*ph*chan);}
-		else wlog("ERROR","Failed to Load Texture"),exit(-1);
-		stbi_image_free(dat);
+	image_t img;
+	texture_t() =default;
+	texture_t(const _t& other) =delete;
+	texture_t& operator =(const _t& other) =delete;
+	texture_t(const _t&& other){
+		ms  =other.ms;
+		mt  =other.mt;
+		mr  =other.mr;
+		mn  =other.mn;
+		mg  =other.mg;
+		cr  =other.cr;
+		id  =other.id;
+		pw  =other.pw;
+		ph  =other.ph;
+		un  =other.un;
+		chan=other.chan;
+		img =std::move(other.img);
+		other.id=0;
 	}
-	void build(const char* img_path,bool _use_alpha/* DISABLED */,int _unit=0){
+	texture_t& operator =(const _t&& other){
+		if(cr&&id) glDeleteTextures(1,&id);
+		ms  =other.ms;
+		mt  =other.mt;
+		mr  =other.mr;
+		mn  =other.mn;
+		mg  =other.mg;
+		cr  =other.cr;
+		id  =other.id;
+		pw  =other.pw;
+		ph  =other.ph;
+		un  =other.un;
+		chan=other.chan;
+		img =std::move(other.img);
+		other.id=0;
+	}
+	texture_t(const char* img_path,bool _use_alpha/* deprecated */,int _unit=0){
 		un=_unit;
-		stbi_set_flip_vertically_on_load(true);
-		unsigned char* dat=stbi_load(img_path,&pw,&ph,&chan,0);
-		if(dat){data.assign(dat,dat+pw*ph*chan);}
-		else wlog("ERROR","Failed to Load Texture"),exit(-1);
-		stbi_image_free(dat);
+		img.load_from_file(img_path);
+		pw=img.width;
+		ph=img.height;
+		chan=img.chan;
+	}
+	void build(const char* img_path,bool _use_alpha/* deprecated */,int _unit=0){
+		un=_unit;
+		img.load_from_file(img_path);
+		pw=img.width;
+		ph=img.height;
+		chan=img.chan;
 	}
 	void wrap(GLenum mode_s,GLenum mode_t,GLenum mode_r=GL_REPEAT){
 		if(mode_s) ms=mode_s;
 		if(mode_t) mt=mode_t;
 		if(mode_r) mr=mode_r;
 		if(cr){
+			if(!id) return;
 			glActiveTexture(GL_TEXTURE0 + un);
         	glBindTexture(GL_TEXTURE_2D, id);
 			par();
@@ -315,6 +364,7 @@ public:
 		if(mode_min) mn=mode_min; 
 		if(mode_mag) mg=mode_mag;
 		if(cr){
+			if(!id) return;
 			glActiveTexture(GL_TEXTURE0 + un);
         	glBindTexture(GL_TEXTURE_2D, id);
 			par();
@@ -333,19 +383,21 @@ public:
 		if(chan==3) mc=GL_RGB;
 		if(chan==1) mc=GL_RED;
 		
-		glTexImage2D(GL_TEXTURE_2D,0,mc,pw,ph,0,mc,GL_UNSIGNED_BYTE,data.data());
+		glTexImage2D(GL_TEXTURE_2D,0,mc,pw,ph,0,mc,GL_UNSIGNED_BYTE,img.data.data());
 		glGenerateMipmap(GL_TEXTURE_2D);
-		std::vector<unsigned char>().swap(data);
+		img.destroy();
 		cr=1;
 		
 	}
 	void bind(int unit){
 		if(!cr) create();
+		if(!id) return;
 		glActiveTexture(GL_TEXTURE0 + unit);
 		glBindTexture(GL_TEXTURE_2D, id);
 	}
 	void bind(){
 		if(!cr) create();
+		if(!id) return;
 		glActiveTexture(GL_TEXTURE0 + un);
         glBindTexture(GL_TEXTURE_2D, id);
 	}
@@ -398,6 +450,7 @@ public:
 		while(iin>>_tmp) _in.data.push_back(_tmp);
 	}
     void upload(GLenum _mode) { // 自动bind 
+    	if(!vao) return;
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         GLenum usage;
@@ -420,6 +473,33 @@ public:
         glGenBuffers(1,&vbo);
         glGenBuffers(1,&ebo);
 	}
+	mesh_buf_t(const mesh_buf_t& other) =delete;
+	mesh_buf_t& operator =(const mesh_buf_t& other) =delete;
+	mesh_buf_t(const mesh_buf_t&& other){
+		vao=other.vao;
+		vbo=other.vbo;
+		ebo=other.ebo;
+		_ve=std::move(other._ve);
+		_in=std::move(other._in);
+		other.vao=0;
+		other.vbo=0;
+		other.ebo=0;
+	}
+	mesh_buf_t& operator =(const mesh_buf_t&& other){
+		if(vao){
+	        glDeleteBuffers(1,&vbo);
+	        glDeleteBuffers(1,&ebo);
+	        glDeleteVertexArrays(1,&vao);
+		}
+		vao=other.vao;
+		vbo=other.vbo;
+		ebo=other.ebo;
+		_ve=std::move(other._ve);
+		_in=std::move(other._in);
+		other.vao=0;
+		other.vbo=0;
+		other.ebo=0;
+	} 
 	mesh_buf_t(const char* ve_path,const char* in_path,GLenum _upload_mode) { // 自动bind 
         glGenVertexArrays(1,&vao);
         glGenBuffers(1,&vbo);
@@ -434,18 +514,22 @@ public:
         _ve=ave,_in=ain;
         upload(_upload_mode);
 	}
-    void bind() {glBindVertexArray(vao);}
+    void bind() {
+    	if(!vao) return;glBindVertexArray(vao);}
     ~mesh_buf_t() {
+    	if(!vao) return;
         glDeleteBuffers(1,&vbo);
         glDeleteBuffers(1,&ebo);
         glDeleteVertexArrays(1,&vao);
     }
     void upd_ve(std::vector<float> _nve){
+    	if(!vao) return;
     	glBindBuffer(GL_ARRAY_BUFFER, vbo);
     	if(_ve.data.size()) _ve.data=_nve;
         glBufferSubData(GL_ARRAY_BUFFER, 0, _nve.size() * sizeof(float), _nve.data());
 	}
 	void upd_in(std::vector<unsigned int> _nin) {
+    	if(!vao) return;
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         if(_in.data.size()) _in.data=_nin;
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, _nin.size() * sizeof(unsigned int), _nin.data());
@@ -455,11 +539,13 @@ public:
         upd_in(_nin);
     }
     void upd_ve_t(ve_t& _nve){// !!!!!!!!!!   勿改变布局选项，下同 ！！！！！！！！！！！ 
+    	if(!vao) return;
     	glBindBuffer(GL_ARRAY_BUFFER, vbo);
     	if(_ve.data.size()) _ve=_nve;
         glBufferSubData(GL_ARRAY_BUFFER, 0, _nve.data.size() * sizeof(float), _nve.data.data());
 	}
 	void upd_in_t(in_t& _nin) {
+    	if(!vao) return;
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         if(_in.data.size()) _in=_nin;
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, _nin.data.size() * sizeof(unsigned int), _nin.data.data());
@@ -469,6 +555,7 @@ public:
         upd_in_t(_nin);
     }
     void upd_ve_p(std::vector<float>& _nve,int _stt){
+    	if(!vao) return;
     	size_t stride=_ve.calc_sum();
     	size_t offs=_stt*stride*sizeof(float);
     	size_t _siz=_nve.size()*sizeof(float);
@@ -478,6 +565,7 @@ public:
     		std::copy(_nve.begin(),_nve.end(),_ve.data.begin()+_stt*stride);
 	} 
 	void upd_in_p(std::vector<unsigned int>& _nin,int _stt){
+    	if(!vao) return;
     	size_t offs=_stt*3*sizeof(unsigned int);
     	size_t _siz=_nin.size()*sizeof(unsigned int);
     	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ebo);
@@ -1038,28 +1126,49 @@ struct mousectrl_t{
 }; 
 
 struct trans_t{
+private:
 	vec3 mtrans=vec3(0.0f,0.0f,0.0f),
 		 mrota =vec3(1.0f,0.0f,0.0f),
 		 mscale =vec3(1.0f,1.0f,1.0f);
-	float mrotn =0.0;
-	vec3 mrote =vec3(0.0f,0.0f,0.0f);
-	bool use_eul=0;
-	bool rad=0;
+	angle_t mrot=0_deg;
+	euler_t mrote=euler(0_deg,0_deg,0_deg);
 	std::string mrots="YXZ";
+public:
+	bool use_eul=0;
+	bool use_angle=0;
+	bool rad=0;
 	void trans(vec3 _trans){
 		mtrans=_trans;
 	}
 	void rot(vec3 _axis,float _angle){
 		mrota=_axis;
-		if(rad) mrotn=_angle;
-		else mrotn=glm::radians(_angle);
+		if(rad) mrot=rad_to_angle(_angle);
+		else    mrot=deg_to_angle(_angle);
+		use_eul=0;
+	}
+	void rot(vec3 _axis,angle_t ang){
+		mrota=_axis;
+		mrot=ang;
 		use_eul=0;
 	}
 	void rote(vec3 _euler,std::string _rots="YXZ"){
-		if(rad) mrote=_euler;
-		else mrote=vec3(glm::radians(_euler.x),glm::radians(_euler.y),glm::radians(_euler.z));
+		if(rad) mrote=euler_t(
+			rad_to_angle(_euler.x), 
+			rad_to_angle(_euler.y), 
+			rad_to_angle(_euler.z)
+		);
+		else    mrote=euler_t(
+			deg_to_angle(_euler.x), 
+			deg_to_angle(_euler.y), 
+			deg_to_angle(_euler.z)
+		);
 		use_eul=1;
 		mrots=_rots;
+	}
+	void rote(euler_t ae,std::string as="YXZ"){
+		mrote=ae;
+		use_eul=1;
+		mrots=as;
 	}
 	void scale(vec3 _scale){
 		mscale=_scale;
@@ -1073,13 +1182,31 @@ struct trans_t{
 		if(use_eul){
 			for(int i=mrots.length()-1;i>=0;i--){
 				switch (mrots[i]){
-					case 'X': case 'x': _trans=glm::rotate(_trans,mrote.x,vec3(1.0f,0.0f,0.0f)); break;
-					case 'Y': case 'y': _trans=glm::rotate(_trans,mrote.y,vec3(0.0f,1.0f,0.0f)); break;
-					case 'Z': case 'z': _trans=glm::rotate(_trans,mrote.z,vec3(0.0f,0.0f,1.0f)); break;
+					case 'X': case 'x': 
+						_trans=glm::rotate(
+							_trans,
+							radians(mrote.x),
+							vec3(1.0f,0.0f,0.0f)
+						); 
+						break;
+					case 'Y': case 'y': 
+						_trans=glm::rotate(
+							_trans,
+							radians(mrote.y),
+							vec3(0.0f,1.0f,0.0f)
+						); 
+						break;
+					case 'Z': case 'z': 
+						_trans=glm::rotate(
+							_trans,
+							radians(mrote.z),
+							vec3(0.0f,0.0f,1.0f)
+						); 
+						break;
 				}
 			}
 		}
-		else _trans=glm::rotate(_trans,mrotn,mrota);
+		else _trans=glm::rotate(_trans,radians(mrot),mrota);
 		_trans=glm::scale(_trans,mscale);
 		return _trans;
 	}
