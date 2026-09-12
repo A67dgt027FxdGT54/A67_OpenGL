@@ -77,7 +77,132 @@ std::string sdu(std::string unif,int ind,std::string memb){
 std::string sdu(std::string unif,std::string memb){
 	return unif+"."+memb;
 }
- 
+
+struct angle_t{
+	float _rad;
+	angle_t(float r):_rad(r){
+	}
+};
+using euler_t=glm::tvec3<angle_t>;
+angle_t operator ""_deg (float deg){
+	return angle_t{radians(deg)};
+}
+angle_t operator ""_rad (float rad){
+	return angle_t{rad};
+}
+angle_t operator ""_deg (int deg){
+	return angle_t{radians((float)deg)};
+}
+angle_t operator ""_rad (int rad){
+	return angle_t{(float)rad};
+}
+float radians(angle_t ang){
+	return ang._rad;
+}
+float degrees(angle_t ang){
+	return degrees(ang._rad);
+}
+angle_t rad_to_angle(float rad){
+	return angle_t{rad};
+}
+angle_t deg_to_angle(float deg){
+	return angle_t{radians(deg)};
+}
+angle_t normalize(angle_t ang){ // (-180,180]
+	angle_t res;
+	res._rad = fmod(ang._rad,radians(360.0f));
+	if(res._rad > radians(180.0f)) res._rad -= radians(360.0f);
+}
+angle_t operator +(angle_t x){
+	return x;
+}
+angle_t operator -(angle_t x){
+	return angle_t{-x._rad};
+}
+angle_t operator +(angle_t x,angle_t y){
+	return angle_t{x._rad + y._rad};
+}
+angle_t operator -(angle_t x,angle_t y){
+	return angle_t{x._rad - y._rad};
+}
+angle_t operator *(angle_t x,float y){
+	return angle_t{x._rad*y};
+}
+angle_t operator *(angle_t x,int y){
+	return angle_t{x._rad*(float)y};
+}
+angle_t operator /(angle_t x,float y){
+	return angle_t{x._rad/y};
+}
+angle_t operator /(angle_t x,int y){
+	return angle_t{x._rad/(float)y};
+}
+angle_t operator %(angle_t x,float y){
+	return angle_t{fmod(x._rad,y)};
+}
+angle_t operator %(angle_t x,int y){
+	return angle_t{fmod(x._rad,(float)y)};
+}
+bool operator ==(angle_t x,angle_t y){
+	return abs(x._rad - y._rad) <= 1e-9;
+}
+bool operator !=(angle_t x,angle_t y){
+	return !(x==y);
+}
+bool operator <(angle_t x,angle_t y){
+	return y._rad - x._rad > 1e-9;
+}
+bool operator >(angle_t x,angle_t y){
+	return y<x;
+}
+bool operator <=(angle_t x,angle_t y){
+	return !(x>y);
+}
+bool operator >=(angle_t x,angle_t y){
+	return !(x<y);
+}
+angle_t& operator =(angle_t& x,angle_t& y){
+	x._rad=y._rad;
+	return x;
+}
+angle_t& operator =(angle_t& x,angle_t&& y){
+	x._rad=y._rad;
+	return x;
+}
+angle_t& operator +=(angle_t& x,angle_t& y){
+	x._rad+=y._rad;
+	return x;
+}
+angle_t& operator -=(angle_t& x,angle_t& y){
+	x._rad-=y._rad;
+	return x;
+}
+angle_t& operator *=(angle_t& x,float& y){
+	x=x*y;
+	return x;
+}
+angle_t& operator *=(angle_t& x,int& y){
+	x=x*y;
+	return x;
+}
+angle_t& operator /=(angle_t& x,float& y){
+	x=x/y;
+	return x;
+}
+angle_t& operator /=(angle_t& x,int& y){
+	x=x/y;
+	return x;
+}
+angle_t& operator %=(angle_t& x,float& y){
+	x=x%y;
+	return x;
+}
+angle_t& operator %=(angle_t& x,int& y){
+	x=x%y;
+	return x;
+}
+
+
 
 //#include ""
 //using std::cin;
@@ -141,7 +266,7 @@ struct _newGLenum{
 }
 gle;
 
-#define trans_nr 0.0f,glm::vec3(1.0f,0.0f,0.0f)
+#define trans_nr 0.0f,glm::vec3(1.0f,0.0f,0.0f) // deprecated
 
 class texture_t{ 
 private:
@@ -368,7 +493,9 @@ struct light_t{
 	vec3 spot_dir=vec3(0.0f,0.0f,-1.0f)/*2*/;
 	vec3 amb=vec3(1.0f,1.0f,1.0f),diff=vec3(1.0f,1.0f,1.0f),spec=vec3(1.0f,1.0f,1.0f);
 	float kc=1.0f,kl=0.09f,kq=0.032f;/*att*/
+	bool use_angle=0;
 	float icutoff=12.5f,ocutoff=17.5f;/*2*/
+	angle_t icutoff_ang=12.5_deg,ocutoff_ang=17.5_deg;
 	int type;
 };
 class shader_t{
@@ -531,8 +658,14 @@ public:
 		setf(name+".kc",lt.kc);
 		setf(name+".kl",lt.kl);
 		setf(name+".kq",lt.kq);
-		setf(name+".icutoff",lt.icutoff);
-		setf(name+".ocutoff",lt.ocutoff);
+		if(lt.use_angle){
+			setf(name+".icutoff",degrees(lt.icutoff_ang));
+			setf(name+".ocutoff",degrees(lt.ocutoff_ang));
+		}
+		else{
+			setf(name+".icutoff",lt.icutoff);
+			setf(name+".ocutoff",lt.ocutoff);
+		}
 	} 
 	void setlight_array(const std::string &name,int index,light_t lt){
 		setlight(name+"["+std::to_string(index)+"]",lt);
@@ -740,14 +873,14 @@ public:
 }; 
 #endif
 
-glm::mat4 transd(glm::vec3 _scale_x,float _rotate_deg,glm::vec3 _rotate_axis,glm::vec3 _translate){
+glm::mat4 transd(glm::vec3 _scale_x,float _rotate_deg,glm::vec3 _rotate_axis,glm::vec3 _translate){ // deprecated
 	glm::mat4 _trans;
 	_trans = glm::translate(_trans,_translate);
 	_trans = glm::rotate(_trans, glm::radians(_rotate_deg), _rotate_axis);
 	_trans = glm::scale(_trans, _scale_x);
 	return _trans;
 }
-glm::mat4 transr(glm::vec3 _scale_x,float _rotate_rad,glm::vec3 _rotate_axis,glm::vec3 _translate){
+glm::mat4 transr(glm::vec3 _scale_x,float _rotate_rad,glm::vec3 _rotate_axis,glm::vec3 _translate){ // deprecated
 	glm::mat4 _trans;
 	_trans = glm::translate(_trans,_translate);
 	_trans = glm::rotate(_trans, _rotate_rad, _rotate_axis);
@@ -807,6 +940,9 @@ public:
 		norma(   yaw   );norma(  pitch    );norma(roll);
 		upd();
 	}
+	camera_t(vec3 _pos, angle_t _yaw=-90.0_deg, angle_t _pitch=0.0_deg, angle_t _roll=0.0_deg)
+		:camera_t(_pos, degrees(_yaw), degrees(_pitch), degrees(_roll)){
+		}
 	camera_t(float posX,float posY,float posZ,float _yaw=-90.0f,float _pitch=0.0f,float _roll=0.0f){
 		pos=vec3(posX,posY,posZ);
 		yaw=_yaw;
@@ -815,18 +951,32 @@ public:
 		norma(   yaw   );norma(  pitch    );norma(roll);
 		upd();
 	}
+	camera_t(float posX,float posY,float posZ, angle_t _yaw=-90.0_deg, angle_t _pitch=0.0_deg, angle_t _roll=0.0_deg)
+		:camera_t(posX, posY, posZ, degrees(_yaw), degrees(_pitch), degrees(_roll)){
+		}
 	void set_yaw(float _yaw){yaw=_yaw;norma(  yaw    );upd();}
+	void set_yaw(angle_t _yaw){yaw=degrees(_yaw);norma(  yaw    );upd();}
 	void set_pitch(float _pitch,GLboolean cp=true){
 		pitch=_pitch;
 		checkp(cp);
 		norma(   pitch   );
 		upd();
 	}
+	void set_pitch(angle_t _pitch,GLboolean cp=true){
+		pitch=degrees(_pitch);
+		checkp(cp);
+		norma(   pitch   );
+		upd();
+	}
 	void set_roll(float _roll){roll=_roll;norma(   roll   );upd();}
+	void set_roll(angle_t _roll){roll=degrees(_roll);norma(   roll   );upd();}
 	
 	float get_yaw(){return yaw;}
 	float get_pitch(){return pitch;}
 	float get_roll(){return roll;}
+	angle_t get_yaw_angle(){return deg_to_angle(yaw);}
+	angle_t get_pitch_angle(){return deg_to_angle(pitch);}
+	angle_t get_roll_angle(){return deg_to_angle(roll);}
 	vec3 get_front(){return front;}
 	vec3 get_right(){return right;}
 	vec3 get_up(){return up;}
@@ -842,6 +992,10 @@ public:
 	void set_look(float _yaw,float _pitch){
 		yaw=_yaw;norma(   yaw   );
 		set_pitch(_pitch);
+	}
+	void set_look(angle_t _yaw,angle_t _pitch){
+		yaw=degrees(_yaw);norma(   yaw   );
+		set_pitch(degrees(_pitch));
 	}
 	void mov_look(float xoffset,float yoffset,GLboolean cp=true){
 		yaw+=xoffset*sensit,
