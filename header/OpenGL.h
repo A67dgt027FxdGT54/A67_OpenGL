@@ -91,10 +91,14 @@ struct angle_t{
 		_rad=y._rad;
 		return *this;
 	}
+	angle_t(angle_t&& y){
+		_rad=y._rad;
+	}
 	angle_t& operator =(angle_t&& y){
 		_rad=y._rad;
 		return *this;
 	}
+	~angle_t()=default;
 };
 using euler_t=glm::tvec3<angle_t>;
 angle_t operator ""_deg (long double deg){
@@ -207,6 +211,15 @@ angle_t& operator %=(angle_t& x,float y){
 angle_t& operator %=(angle_t& x,int y){
 	x=x%y;
 	return x;
+}
+float sin(angle_t ang){
+	return glm::sin(radians(ang));
+}
+float cos(angle_t ang){
+	return glm::cos(radians(ang));
+}
+float tan(angle_t ang){
+	return glm::tan(radians(ang));
 }
 
 
@@ -351,10 +364,24 @@ public:
 		ph=img.height;
 		chan=img.chan;
 	}
+	texture_t(const image_t& aImg,int aUnit=0){
+		un=aUnit;
+		img=aImg;
+		pw=img.width;
+		ph=img.height;
+		chan=img.chan;
+	}
 	void build(const char* img_path,bool _use_alpha/* deprecated */,int _unit=0){
 		if(cr&&id){ glDeleteTextures(1,&id); id=0; cr=0; }
 		un=_unit;
 		img.load_from_file(img_path);
+		pw=img.width;
+		ph=img.height;
+		chan=img.chan;
+	}
+	void build(const image_t& aImg,int aUnit=0){
+		un=aUnit;
+		img=aImg;
 		pw=img.width;
 		ph=img.height;
 		chan=img.chan;
@@ -536,19 +563,19 @@ public:
         glDeleteBuffers(1,&ebo);
         glDeleteVertexArrays(1,&vao);
     }
-    void upd_ve(std::vector<float> _nve){
+    void upd_ve(const std::vector<float>& _nve){
     	if(!vao) return;
     	glBindBuffer(GL_ARRAY_BUFFER, vbo);
     	if(_ve.data.size()) _ve.data=_nve;
         glBufferSubData(GL_ARRAY_BUFFER, 0, _nve.size() * sizeof(float), _nve.data());
 	}
-	void upd_in(std::vector<unsigned int> _nin) {
+	void upd_in(const std::vector<unsigned int>& _nin) {
     	if(!vao) return;
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         if(_in.data.size()) _in.data=_nin;
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, _nin.size() * sizeof(unsigned int), _nin.data());
     }
-    void upd(std::vector<float> _nve,std::vector<unsigned int> _nin) {
+    void upd(const std::vector<float>& _nve,const std::vector<unsigned int>& _nin) {
         upd_ve(_nve);
         upd_in(_nin);
     }
@@ -872,7 +899,7 @@ public:
 		glClearColor(_r,_g,_b,_a);
 		glClear(
 			GL_COLOR_BUFFER_BIT | 
-			(_edep ? GL_DEPTH_BUFFER_BIT : 0 ) 
+			(1 ? GL_DEPTH_BUFFER_BIT : 0 ) 
 		);
 	}
 	void clr_rgb(unsigned int _rgb){clr_col((_rgb>>16)/255.0f,((_rgb>>8)&0xff)/255.0f,(_rgb&0xff)/255.0f,1.0f);}
@@ -1264,7 +1291,7 @@ public:
 		_trans=glm::scale(_trans,mscale);
 		return _trans;
 	}
-	mat3 norm_matr(){
+	mat3 norm_matr() const{
 		return mat3(glm::transpose(glm::inverse(matr())));
 	}
 };

@@ -7,6 +7,9 @@
     </head>
     <body>
         <h1>文档</h1>
+
+        <!-- <h2>目录</h2> -->
+
         <h2>一、核心类型与常量（gle）</h2>
         <div class="defbar">
             <code>gle</code> 是库预定义的一个全局对象，存放常用的 OpenGL 枚举值，方便记忆和书写。
@@ -162,11 +165,26 @@
             <div class="right">顶点数据对象和索引数据对象（可直接修改）。</div>
         </div>
 
-        <h2>四、纹理（texture_t）</h2>
-        <h3>构造函数</h3>
-        <code class="block">texture_t tx(const char* 图片路径, bool 忽略, int 默认纹理单元=0);</code>
+        <h2>四、纹理（texture_t）&图片（image_t）</h2>
+        <h3>图片（image_t）-成员函数</h3>
+        <code>image_t::load_from_file(const char* path);</code> 用于从指定的路径加载图片。<br><br>
+        <code>image_t::destroy();</code> 释放图片所占内存。（可选，不是必须调用）<br><br>
+        <h3>图片（image_t）-公开成员</h3>
+        <div class="bar"><div class="left"><code>width, height</code></div><div class="right">图片宽度、高度（像素）。</div></div>
+        <div class="bar"><div class="left"><code>chan</code></div><div class="right">通道数（1/2/3/4）。</div></div>
+        <div class="bar"><div class="left"><code>vector&lt;uchar&gt; data</code></div><div class="right">图片像素数据。</div></div>
+        <div class="tipst">存储方式</div>
+        <div class="tips">
+            对于每张图片，按从下到上顺序存储每个行。<br>
+            对于每行，按从左到右顺序存储每个像素。<br>
+            对于每个像素，按通道顺序存储。
+        </div>
 
-        <h3>成员函数</h3>
+        <h3>纹理（texture_t）-构造函数</h3>
+        <code class="block">texture_t tx(const char* 图片路径, bool 忽略, int 默认纹理单元=0);
+texture_t tx(image_t 图片数据, int 默认纹理单元=0);</code>
+
+        <h3>纹理（texture_t）-成员函数</h3>
         <div class="bar">
             <div class="left"><code>tx.build(...)</code></div>
             <div class="right">参数及功能同构造函数。</div>
@@ -188,10 +206,10 @@
             <div class="right">设置纹理缩放时的过滤方式（见 gle 常量）。</div>
         </div>
 
-        <h3>公开成员</h3>
+        <h3>纹理（texture_t）-公开成员</h3>
         <div class="bar"><div class="left"><code>pw, ph</code></div><div class="right">纹理宽度、高度（像素）。</div></div>
         <div class="bar"><div class="left"><code>un</code></div><div class="right">默认纹理单元编号。</div></div>
-        <div class="bar"><div class="left"><code>chan</code></div><div class="right">通道数（1/3/4）。</div></div>
+        <div class="bar"><div class="left"><code>chan</code></div><div class="right">通道数（1/2/3/4）。</div></div>
 
         <h3>全局边框颜色函数</h3>
         <div class="bar">
@@ -718,6 +736,17 @@ void main() {
             <div class="right">最终光照颜色（<code>vec4</code>，alpha 固定为 <code>1.0</code>）。</div>
         </div>
 
+        <h2>十三、角度计算 （<code>angle_t</code>）</h2>
+        为了解决角度单位混乱的问题，引入了 <code>angle_t</code> 。<br><br>
+        <code>3.14_rad</code> <code>45_deg</code> 是 <code>angle_t</code> 的字面量。<br><br>
+        <code>float radians/degrees(angle_t ang);</code> 用于将 <code>angle_t</code> 转换为弧度/角度。<br><br>
+        <code>angle_t rad/deg_to_angle(float rad/deg);</code> 用于将弧度/角度转换为 <code>angle_t</code>。<br><br>
+        <code>angle_t normalize(angle_t ang);</code> 用于将 <code>angle_t</code> 限制在 <code>(-180_deg, 180_deg]</code> 之间。<br><br>
+        <code>angle_t</code> 支持基础数学运算及比较和 <code>sin,cos,tan</code>。<br><br>
+
+        <code>euler_t</code> 是 <code>angle_t</code> 的 <code>vec3</code>，用于表示欧拉角。<br><br>
+
+        在本库中除 <code>camera_t::fov, persp(fov)</code> 之外的所有接口，均可以（并推荐）使用 <code>angle_t</code> <code>euler_t</code>。
 
     </body>
 </html>
