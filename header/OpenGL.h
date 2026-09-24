@@ -888,7 +888,7 @@ public:
 
 class gl_t{
 private:
-	bool _edep=0,_eblend=1,_ecf=0;
+	bool _edep=0,_eblend=1,_ecf=0,_est=0;
 	std::map<int,bool> _kdn; 
 public:
 	int winw,winh;
@@ -899,7 +899,8 @@ public:
 		glClearColor(_r,_g,_b,_a);
 		glClear(
 			GL_COLOR_BUFFER_BIT | 
-			(1 ? GL_DEPTH_BUFFER_BIT : 0 ) 
+			(1 ? GL_DEPTH_BUFFER_BIT : 0 ) |
+			(1 ? GL_STENCIL_BUFFER_BIT : 0)
 		);
 	}
 	void clr_rgb(unsigned int _rgb){clr_col((_rgb>>16)/255.0f,((_rgb>>8)&0xff)/255.0f,(_rgb&0xff)/255.0f,1.0f);}
@@ -1010,6 +1011,11 @@ public:
 		 glEnable(GL_CULL_FACE);
 		else
 		 glDisable(GL_CULL_FACE);
+	}
+	void stencil(bool enable){
+		_est=enable;
+		if(enable) glEnable(GL_STENCIL_TEST);
+		else glDisable(GL_STENCIL_TEST);
 	}
 	void mouse_cb(){
 		glfwSetCursorPosCallback(window, mouse_callback);
