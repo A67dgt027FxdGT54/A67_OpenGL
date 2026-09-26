@@ -278,6 +278,13 @@ struct _newGLenum{
 		tex_fil_jl		=GL_LINEAR_MIPMAP_NEAREST,
 		tex_fil_lp		=GL_NEAREST_MIPMAP_LINEAR,
 		tex_fil_jp		=GL_NEAREST_MIPMAP_NEAREST;
+	
+	const unsigned int
+		common_image=0,
+		color_buf	=1,
+		depth_buf	=2,
+		stencil_buf	=3,
+		d24s8		=4;
 		
 	
 	const glm::vec3
@@ -307,7 +314,7 @@ struct image_t{
 };
 class texture_t{ 
 private:
-	GLenum ms=GL_REPEAT, mt=GL_REPEAT, mr=GL_REPEAT, mn=GL_LINEAR_MIPMAP_LINEAR, mg=GL_LINEAR, mc=GL_RGB;
+	GLenum ms=GL_REPEAT, mt=GL_REPEAT, mr=GL_REPEAT, mn=GL_LINEAR, mg=GL_LINEAR, mc=GL_RGB;
 	bool cr=0,
 		 alpha=0; /* deprecated */
 	void par(){
@@ -317,9 +324,10 @@ private:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mn);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mg);
 	}
-	unsigned int id=0;
 public:
 	int pw=0,ph=0,un=0,chan=0;
+	int type=gle.common_image;
+	unsigned int id=0;
 	image_t img;
 	texture_t() =default;
 	texture_t(const texture_t& other) =delete;
@@ -370,6 +378,18 @@ public:
 		pw=img.width;
 		ph=img.height;
 		chan=img.chan;
+	}
+	texture_t(unsigned int bufType, int w, int h, int aUnit=0){
+		cr=1;
+		glGenTextures(1, &id);
+		glBindTexture(GL_TEXTURE_2D, id);
+		type=bufType;
+			 if(bufType == gle.color_buf)	glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,			 w,h,0,GL_RGB,			  GL_UNSIGNED_BYTE,NULL);
+		else if(bufType == gle.depth_buf)	glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT, w,h,0,GL_DEPTH_COMPONENT,GL_UNSIGNED_BYTE,NULL);
+		else if(bufType == gle.stencil_buf)glTexImage2D(GL_TEXTURE_2D,0,GL_STENCIL_INDEX, 	 w,h,0,GL_STENCIL_INDEX,  GL_UNSIGNED_BYTE,NULL);
+		else if(bufType == gle.d24s8)		glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH24_STENCIL8,w,h,0,GL_DEPTH_STENCIL,  GL_UNSIGNED_INT_24_8,NULL);
+		un=aUnit;
+		par();
 	}
 	void build(const char* img_path,bool _use_alpha/* deprecated */,int _unit=0){
 		if(cr&&id){ glDeleteTextures(1,&id); id=0; cr=0; }
