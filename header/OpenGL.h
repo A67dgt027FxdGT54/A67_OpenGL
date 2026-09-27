@@ -344,6 +344,10 @@ public:
 		ph  =other.ph;
 		un  =other.un;
 		chan=other.chan;
+		type=other.type;
+		mc  =other.mc;
+		alpha=other.alpha;
+		other.cr=0;
 		img =std::move(other.img);
 		other.id=0;
 	}
@@ -361,6 +365,10 @@ public:
 		ph  =other.ph;
 		un  =other.un;
 		chan=other.chan;
+		type=other.type;
+		mc  =other.mc;
+		alpha=other.alpha;
+		other.cr=0;
 		img =std::move(other.img);
 		other.id=0;
 		return *this;
@@ -381,14 +389,17 @@ public:
 	}
 	texture_t(unsigned int bufType, int w, int h, int aUnit=0){
 		cr=1;
+		un=aUnit;
+		pw=w, ph=h;
 		glGenTextures(1, &id);
+		glActiveTexture(GL_TEXTURE0+aUnit);
 		glBindTexture(GL_TEXTURE_2D, id);
 		type=bufType;
-			 if(bufType == gle.color_buf)	glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,			 w,h,0,GL_RGB,			  GL_UNSIGNED_BYTE,NULL);
-		else if(bufType == gle.depth_buf)	glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT, w,h,0,GL_DEPTH_COMPONENT,GL_UNSIGNED_BYTE,NULL);
-		else if(bufType == gle.stencil_buf)glTexImage2D(GL_TEXTURE_2D,0,GL_STENCIL_INDEX, 	 w,h,0,GL_STENCIL_INDEX,  GL_UNSIGNED_BYTE,NULL);
-		else if(bufType == gle.d24s8)		glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH24_STENCIL8,w,h,0,GL_DEPTH_STENCIL,  GL_UNSIGNED_INT_24_8,NULL);
-		un=aUnit;
+			 if(bufType == gle.color_buf)glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,			 	w,h,0,GL_RGB,			  	GL_UNSIGNED_BYTE,NULL);
+		else if(bufType == gle.depth_buf)glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT32F,w,h,0,GL_DEPTH_COMPONENT32F,GL_FLOAT		,NULL);
+		else if(bufType==gle.stencil_buf)glTexImage2D(GL_TEXTURE_2D,0,GL_STENCIL_INDEX, 	w,h,0,GL_STENCIL_INDEX,  	GL_UNSIGNED_BYTE,NULL);
+		else if(bufType == gle.d24s8)	 glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH24_STENCIL8,	w,h,0,GL_DEPTH_STENCIL,  GL_UNSIGNED_INT_24_8,NULL);
+		else wlog("WARN","invalid buffer texture type");
 		par();
 	}
 	void build(const char* img_path,bool _use_alpha/* deprecated */,int _unit=0){
@@ -398,6 +409,7 @@ public:
 		pw=img.width;
 		ph=img.height;
 		chan=img.chan;
+		type=gle.common_image;
 	}
 	void build(const image_t& aImg,int aUnit=0){
 		un=aUnit;
@@ -405,8 +417,9 @@ public:
 		pw=img.width;
 		ph=img.height;
 		chan=img.chan;
+		type=gle.common_image;
 	}
-	void wrap(GLenum mode_s,GLenum mode_t,GLenum mode_r=GL_REPEAT){
+	void wrap(GLenum mode_s,GLenum mode_t,GLenum mode_r=0){
 		if(mode_s) ms=mode_s;
 		if(mode_t) mt=mode_t;
 		if(mode_r) mr=mode_r;
@@ -441,7 +454,9 @@ public:
 		if(chan==2) mc=GL_RG;
 		if(chan==1) mc=GL_RED;
 		
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		glTexImage2D(GL_TEXTURE_2D,0,mc,pw,ph,0,mc,GL_UNSIGNED_BYTE,img.data.data());
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 		glGenerateMipmap(GL_TEXTURE_2D);
 		img.destroy();
 		cr=1;
@@ -1316,6 +1331,95 @@ public:
 	}
 };
 
+class renderbuffer_t{
+private:
+public:
+	unsigned int id=0, type=gle.d24s8;
+	renderbuffer_t(unsigned int aType,int w,int h){
+		glGenRenderbuffers(1,&id);
+		glBindRenderbuffer(GL_RENDERBUFFER,id);
+		if(aType == gle.d24s8) glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+		type=aType;
+	}
+	~renderbuffer_t(){
+		if(id)
+			glDeleteRenderbuffers(1, &id);
+	}
+	void bind(){
+		if(id)
+			glBindRenderbuffer(GL_RENDERBUFFER,id);
+	}
+	
+	renderbuffer_t()=delete;
+	renderbuffer_t(const renderbuffer_t& o)=delete;
+	renderbuffer_t& operator =(const renderbuffer_t& o)=delete;
+	renderbuffer_t(renderbuffer_t&& o) noexcept{
+		id=o.id;
+		o.id = 0;
+		type=o.type;
+	}
+	renderbuffer_t& operator =(renderbuffer_t&& o) noexcept{
+		if(this==&o) return *this;
+		if(id) glDeleteRenderbuffers(1, &id);
+		id=o.id;
+		o.id = 0;
+		type=o.type;
+		return *this;
+	}
+};
+class framebuffer_t{
+private:
+	unsigned int id = 0;
+public:
+	framebuffer_t(){
+		glGenFramebuffers(1, &id);
+	}
+	void bind(){
+		if(id)
+			glBindFramebuffer(GL_FRAMEBUFFER, id);
+	}
+	void unbind(){
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+	void destroy(){
+		if(id) glDeleteFramebuffers(1, &id);
+		id = 0;
+	}
+	~framebuffer_t(){
+		if(id) glDeleteFramebuffers(1, &id);
+	}
+	void add(texture_t& tx, int caid){
+		if(!id || !tx.id) return;
+		tx.wrap(gle.tex_clamp_to_edge, gle.tex_clamp_to_edge);
+		bind();
+		     if(tx.type==gle.color_buf)   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + caid, GL_TEXTURE_2D, tx.id, 0);
+		else if(tx.type==gle.depth_buf)   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,		  GL_TEXTURE_2D, tx.id, 0);
+		else if(tx.type==gle.stencil_buf) glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,		  GL_TEXTURE_2D, tx.id, 0);
+		else if(tx.type==gle.d24s8)	 	  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, tx.id, 0);
+		else wlog("WARN", "invalid type of framebuffer texture");
+	}
+	void add(renderbuffer_t& rb){
+		if(!id || !rb.id) return;
+		bind();
+		rb.bind();
+		if(rb.type == gle.d24s8)glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rb.id);
+		else wlog("WARN", "invalid type of framebuffer renderbuffer");
+	}
+	
+	framebuffer_t(const framebuffer_t& o)=delete;
+	framebuffer_t& operator =(const framebuffer_t& o)=delete;
+	framebuffer_t(framebuffer_t&& o) noexcept{
+		id = o.id;
+		o.id = 0;
+	}
+	framebuffer_t& operator =(framebuffer_t&& o) noexcept{
+		if(this==&o) return *this;
+		if(id) glDeleteFramebuffers(1, &id);
+		id = o.id;
+		o.id = 0;
+		return *this;
+	}
+};
 
 
 #endif // __A67_OpenGL_OpenGL_H
