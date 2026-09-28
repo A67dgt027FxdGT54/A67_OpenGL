@@ -99,7 +99,11 @@
         </div>
         <div class="bar">
             <div class="left"><code>gl.dept(bool 启用)</code></div>
-            <div class="right">启用/禁用深度测试（3D渲染必须开启）。</div>
+            <div class="right">启用/禁用深度测试（3D渲染必须开启）。<br>会将片段到相机的距离存入“深度缓冲”，以自动维持遮挡关系。</div>
+        </div>
+        <div class="bar">
+            <div class="left"><code>gl.stencil(bool 启用)</code></div>
+            <div class="right">启用/禁用模板测试。<br>会将片段“按特点规则计算出的值”存入“模板缓冲”，以不渲染某一部分。</div>
         </div>
         <div class="bar">
             <div class="left"><code>gl.blend(bool 启用)</code></div>
@@ -181,13 +185,24 @@
         </div>
 
         <h3>纹理（texture_t）-构造函数</h3>
-        <code class="block">texture_t tx(const char* 图片路径, bool 忽略, int 默认纹理单元=0);
-texture_t tx(image_t 图片数据, int 默认纹理单元=0);</code>
+        <code class="block">1: texture_t tx(const char* 图片路径, bool 忽略, int 默认纹理单元=0);
+2: texture_t tx(image_t 图片数据, int 默认纹理单元=0);
+
+// 当要创建纹理附件（详见“十四、帧缓冲”章节）时 (已经渲染过的纹理附件，可以与普通纹理一样正常使用)
+3: texture_t tx(u32 bufType, int w, int h, int 默认纹理单元=0);
+/*  bufType 是 gle 的成员，代表纹理附件的类型
+ *  - gle.color_buf 表示该附件存储颜色（RGB）。
+ *  - gle.depth_buf 表示该附件作为深度缓冲（float32）。
+ *  - gle.stencil_buf 表示该附件作为模板缓冲（u8）。
+ *  - gle.d24s8 表示该附件同时存储深度缓冲和模板缓冲（深度缓冲 24bit 定点数，模板缓冲 u8）。
+ *  w 与 h 最好与窗口大小相等。否则需要在切换时调用 glViewport 以适配缓冲大小。
+ */
+</code>
 
         <h3>纹理（texture_t）-成员函数</h3>
         <div class="bar">
             <div class="left"><code>tx.build(...)</code></div>
-            <div class="right">参数及功能同构造函数。</div>
+            <div class="right">参数及功能同构造函数 1/2。</div>
         </div>
         <div class="bar">
             <div class="left"><code>tx.bind()</code></div>
@@ -199,11 +214,11 @@ texture_t tx(image_t 图片数据, int 默认纹理单元=0);</code>
         </div>
         <div class="bar">
             <div class="left"><code>tx.wrap(GLenum S轴模式, GLenum T轴模式)</code></div>
-            <div class="right">设置纹理坐标超出范围时的行为（见 gle 常量）。</div>
+            <div class="right">绑定到默认纹理单元并设置纹理坐标超出范围时的行为（见 gle 常量）。</div>
         </div>
         <div class="bar">
             <div class="left"><code>tx.fil(GLenum 缩小模式, GLenum 放大模式)</code></div>
-            <div class="right">设置纹理缩放时的过滤方式（见 gle 常量）。</div>
+            <div class="right">绑定到默认纹理单元并设置纹理缩放时的过滤方式（见 gle 常量）。</div>
         </div>
 
         <h3>纹理（texture_t）-公开成员</h3>
@@ -748,5 +763,27 @@ void main() {
 
         在本库中除 <code>camera_t::fov, persp(fov)</code> 之外的所有接口，均可以（并推荐）使用 <code>angle_t</code> <code>euler_t</code>。
 
+        <h2>十四、帧缓冲（ <code>framebuffer_t</code> ）</h2>
+        用于离屏渲染（就是存储渲染的结果，而非渲染到屏幕上）。 <br>
+        <h3>定义对象</h3>
+        <code class="block">framebuffer_t fb;</code>
+        <h3>成员函数</h3>
+        <code>fb.bind();</code> ：绑定此帧缓冲。之后将不会渲染到屏幕上，而是渲染到这个缓冲。<br>
+        <code>fb.unbind();</code> ：解绑此帧缓冲。之后将不会渲染到这个缓冲，而是渲染到屏幕上。<br>
+        <code>fb.destroy();</code> ：提前删除此帧缓冲。不调用则会（在析构函数中）自动删除。<br>
+        <code>fb.add(texture_t& tx, int caid);</code> ：绑定此帧缓冲并为其添加一个纹理附件。（详见下文及“四、纹理”章节）。参数 <code>caid</code> <!-- 在纹理附件的类型为“颜色缓冲”时有效，代表颜色缓冲的编号。通常-->是为之后预留的，目前应为 0 。<br>
+        <code>fb.add(renderbuffer_t& rb);</code> ：绑定此帧缓冲并为其添加一个渲染缓冲附件。（详见下文）。<br>
+        <h3>附件</h3>
+        附件存储渲染结果（颜色、深度缓冲、模板缓冲）。<br>
+        <h4>纹理附件</h4>
+        详见“四、纹理”章节。
+        <h4>渲染缓冲（<code>renderbuffer_t</code>）</h4>
+        性能比纹理附件更好，但是只写，不能读。因此仅用于存储通常不用读的深度缓冲及模板缓冲。<br>
+        定义对象：
+        <code class="block">renderbuffer_t rb(u32 aType, int w, int h);
+/*  bufType 是 gle 的成员，代表附件的类型
+ *  - gle.d24s8 表示该附件同时存储深度缓冲和模板缓冲（深度缓冲 24bit 定点数，模板缓冲 u8）。
+ *  w 与 h 最好与窗口大小相等。否则需要在切换时调用 glViewport 以适配缓冲大小。
+ */</code>
     </body>
 </html>
