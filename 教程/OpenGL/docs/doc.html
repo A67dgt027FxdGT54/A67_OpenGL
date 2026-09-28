@@ -751,6 +751,28 @@ void main() {
             <div class="right">最终光照颜色（<code>vec4</code>，alpha 固定为 <code>1.0</code>）。</div>
         </div>
 
+        <h3>9. 着色器卷积库 <code>&lt;convolution.fsh&gt;</code></h3>
+        <h4>函数调用</h4>
+        <code>vec3 convolve(sampler2D atex, vec2 attex, float matrix[9], float offset);</code>
+        <br>
+        <h4>功能</h4>
+        对纹理 <code>atex</code> 进行卷积运算，纹理坐标 <code>attex</code>，卷积矩阵是 <code>matrix</code>，采样偏移 <code>offset</code>。
+        <h4>示例</h4>
+        以下 fs 对纹理使用卷积算法进行“边缘检测”。
+        <code class="block">#version 330 core
+#include &lt;convolution.fsh&gt;
+in vec2 tTex;
+out vec4 fcol;
+uniform sampler2D tex;
+void main(){
+    float mtx[9]=float[](
+        1,1,1,
+        1,-8,1,
+        1,1,1
+    );
+    fcol = vec4(convolve(tex,tTex,mtx,0.003),1.0);
+}</code>
+
         <h2>十三、角度计算 （<code>angle_t</code>）</h2>
         为了解决角度单位混乱的问题，引入了 <code>angle_t</code> 。<br><br>
         <code>3.14_rad</code> <code>45_deg</code> 是 <code>angle_t</code> 的字面量。<br><br>
