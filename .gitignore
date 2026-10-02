@@ -11,7 +11,7 @@ header/sto_p.h
 LAN/
 learn/
 lib/
-res/
+/res/
 tutorial/
 ext/
 /*.txt
