@@ -26,12 +26,29 @@
 
 #ifndef __A67_OpenGL_OpenGL_H
 #define __A67_OpenGL_OpenGL_H 1
+
+// Standard Library 
 #include<bits/stdc++.h>
-#include<windows.h>
 #include<time.h> 
+
+// Windows API
+#include<windows.h>
 #include<conio.h>
 
-#include "std_header.h" 
+// GLAD
+#include <glad/glad_c.h>
+
+// GLFW 
+#include <GLFW/glfw3.h>
+
+// STB
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
+// GLM
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 using glm::vec2;
 using glm::vec3;
