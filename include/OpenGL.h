@@ -986,7 +986,7 @@ public:
 	void fill(){glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);}
 	// 初始化，创建窗口
 	//       使用OpenGL 3.3，窗口宽高标题
-	gl_t(bool _use_v3_3,int _ww,int _wh,const char* _wtitle){
+	gl_t(bool _use_v3_3,int _ww,int _wh,const char* _wtitle, std::vector<std::pair<int, int> > window_hint){
 		winw=_ww;
 		winh=_wh;
 		
@@ -1005,6 +1005,9 @@ public:
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	    }
+	    for(auto& g: window_hint){
+	    	glfwWindowHint(g.first, g.second);
+		}
 
 		// 4.创建窗口
 		window = glfwCreateWindow(_ww, _wh,_wtitle, NULL, NULL);
