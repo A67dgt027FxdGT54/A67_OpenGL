@@ -40,7 +40,6 @@ vec4 lighting(vec3 norm,vec3 v_dir,material_t materi,light_t lt){
 	vec3 spec=lt.spec*(pow(max(dot(v_dir,refd),0.0),materi.shini)*materi.spec);
 	diff*=inten;
 	spec*=inten;
-	vec3 res=amb+diff+spec;
-	res*=att;
+	vec3 res=amb+diff*att+spec*att;
 	return vec4(res,1.0);
 }
