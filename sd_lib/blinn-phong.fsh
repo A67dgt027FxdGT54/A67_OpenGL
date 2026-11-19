@@ -6,6 +6,7 @@ struct material_t{
 	vec3 diff;
 	vec3 spec;
 	float shini;
+	vec3 lumin;
 };
 struct light_t{
 	vec3 dir,spot_dir;
@@ -39,6 +40,6 @@ vec4 lighting(vec3 norm,vec3 v_dir,material_t materi,light_t lt){
 	vec3 spec=lt.spec*(pow(max(dot(norm,normalize(lt.dir+v_dir)),0.0),materi.shini)*materi.spec);
 	diff*=inten;
 	spec*=inten;
-	vec3 res=amb+diff*att+spec*att;
+	vec3 res=amb+diff*att+spec*att+materi.lumin;
 	return vec4(res,1.0);
 }
