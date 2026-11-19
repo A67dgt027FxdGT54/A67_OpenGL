@@ -513,6 +513,11 @@ struct ve_t{
 		return sum;
 	}
 	void append(std::vector<float> _nd){
+		data.reserve(data.size() + _nd.size());
+		for(float g:_nd) data.push_back(g);
+	}
+	void append(std::initializer_list<float> _nd){
+		data.reserve(data.size() + _nd.size());
 		for(float g:_nd) data.push_back(g);
 	}
 }; 
@@ -520,6 +525,11 @@ struct in_t{
 	std::vector<unsigned int> data;
 	void clr(){std::vector<unsigned int>().swap(data);}
 	void append(std::vector<unsigned int> _nd){
+		data.reserve(data.size() + _nd.size());
+		for(unsigned int g:_nd) data.push_back(g);
+	}
+	void append(std::initializer_list<unsigned int> _nd){
+		data.reserve(data.size() + _nd.size());
 		for(unsigned int g:_nd) data.push_back(g);
 	}
 };
