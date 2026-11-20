@@ -996,7 +996,7 @@ public:
 	void fill(){glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);}
 	// 初始化，创建窗口
 	//       使用OpenGL 3.3，窗口宽高标题
-	gl_t(bool _use_v3_3,int _ww,int _wh,const char* _wtitle, std::vector<std::pair<int, int> > window_hint){
+	gl_t(bool _use_v3_3,int _ww,int _wh,const char* _wtitle, std::vector<std::pair<int, int> > window_hint = {}){
 		winw=_ww;
 		winh=_wh;
 		
@@ -1054,6 +1054,7 @@ public:
 //		// 10.鼠标设置
 //	    if(_use_mouse)glfwSetCursorPosCallback(window, mouse_callback),glfwSetScrollCallback(window, scroll_callback); 
 		
+		glfwGetFramebufferSize(window, &winw, &winh);
 	}
 	void triangle(int _stt,int _siz){glDrawElements(GL_TRIANGLES, _siz*3, GL_UNSIGNED_INT, (void*)(uintptr_t)(_stt*3*4));}
 	float w_div_h(){return (float)(winw)/(float)(winh);}
